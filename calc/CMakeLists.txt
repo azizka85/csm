@@ -7,6 +7,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(calc STATIC
     grid.cpp
+    time.cpp
 )
 
 target_include_directories(calc PUBLIC ${CMAKE_SOURCE_DIR})
