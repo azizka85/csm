@@ -8,7 +8,9 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(calc STATIC
     grid.cpp
     time.cpp
-)
+    wind.cpp
+    turbulence.cpp
+ "turbulence.h" "turbulence.cpp" "data.h")
 
 target_include_directories(calc PUBLIC ${CMAKE_SOURCE_DIR})
 

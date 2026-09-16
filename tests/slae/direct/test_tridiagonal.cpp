@@ -1,7 +1,3 @@
-#define BOOST_TEST_MODULE Tests
-
-#include <boost/test/included/unit_test.hpp>
-
 #include <format>
 
 #include <cmath>
@@ -9,8 +5,6 @@
 #include <stdexcept>
 
 #include <slae/direct/tridiagonal.h>
-
-#include "../../calc/test_grid.cpp"
 
 using namespace SLAE::Direct;
 

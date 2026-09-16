@@ -1,0 +1,62 @@
+#ifndef CALC_DATA_H
+#define CALC_DATA_H
+
+#include <string>
+#include <vector>
+
+using namespace std;
+
+namespace Calc::Data {
+	struct PhysicalParams {
+		double rho;
+		double f;
+	};
+
+	struct DepthAveragedVelocity {
+		double ua;
+		double va;
+	};
+
+	struct Column {
+		string name;
+		size_t precision;
+	};
+
+	struct TimeState {
+		size_t m;
+		double t;
+	};
+
+	struct SurfaceState {
+		size_t nx;
+		size_t ny;
+
+		double dx;
+		double dy;
+	};
+
+	struct SurfaceVector {
+		vector<double> vx;
+		vector<double> vy;
+	};
+
+	struct VolumeState {
+		size_t nx;
+		size_t ny;
+		size_t nz;
+
+		double dx;
+		double dy;
+
+		vector<double> dz;
+		vector<double> h;
+	};
+
+	struct VolumeVector {
+		vector<double> vx;
+		vector<double> vy;
+		vector<double> vz;
+	};
+}
+
+#endif 

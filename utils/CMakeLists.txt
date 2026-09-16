@@ -9,6 +9,7 @@ add_library(utils STATIC
 	checks/bathymetry.cpp
 	checks/vector.cpp
 	checks/time.cpp
+	checks/phys.cpp
 )
 
 target_include_directories(utils PUBLIC ${CMAKE_SOURCE_DIR})

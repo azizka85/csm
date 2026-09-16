@@ -5,7 +5,7 @@ project(tests LANGUAGES CXX)
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 add_executable(tests 
-    slae/direct/test_tridiagonal.cpp
+    test_main.cpp
 )
 
 target_link_libraries(tests 
