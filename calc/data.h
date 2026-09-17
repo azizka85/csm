@@ -84,6 +84,32 @@ namespace Calc::Data {
 		WindStress stress;
 		Current current;
 	};
+
+	struct CartesianBound {
+		double minX;
+		double minY;
+
+		double maxX;
+		double maxY;
+	};
+
+	struct GeoBound {
+		double latMin;
+		double lonMin;
+
+		double latMax;
+		double lonMax;
+	};
+
+	struct CartesianPoint {
+		double x;
+		double y;
+	};
+
+	struct GeoPoint {
+		double lat;
+		double lon;
+	};
 }
 
 #endif 
