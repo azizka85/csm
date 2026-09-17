@@ -57,6 +57,33 @@ namespace Calc::Data {
 		vector<double> vy;
 		vector<double> vz;
 	};
+
+	struct WindSpeed {
+		vector<double> u10;
+		vector<double> v10;
+	};
+
+	struct WindStress {
+		vector<double> qx;
+		vector<double> qy;
+	};
+
+	struct Wind {
+		double time;
+		WindSpeed speed;
+		WindStress stress;
+	};
+
+	struct Current {
+		vector<double> ua;
+		vector<double> va;
+	};
+
+	struct WindCurrent {
+		WindSpeed speed;
+		WindStress stress;
+		Current current;
+	};
 }
 
 #endif 

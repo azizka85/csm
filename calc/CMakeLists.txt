@@ -10,7 +10,7 @@ add_library(calc STATIC
     time.cpp
     wind.cpp
     turbulence.cpp
- "turbulence.h" "turbulence.cpp" "data.h")
+ )
 
 target_include_directories(calc PUBLIC ${CMAKE_SOURCE_DIR})
 
