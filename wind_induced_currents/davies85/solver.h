@@ -156,8 +156,8 @@ namespace WindInducedCurrents::Davies85 {
 		void writeData(
 			const TimeState& time,
 			const VolumeState& volume,
-			const Current& current,
-			const Calc::Data::Wind& currentWindData,
+			Current& current,
+			Calc::Data::Wind& currentWindData,
 			vector<double>& z,
 			const Directories& dirs,
 			vector<double>& uf,

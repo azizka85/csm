@@ -59,13 +59,13 @@ namespace Calc::Data {
 	};
 
 	struct WindSpeed {
-		vector<double> &u10;
-		vector<double> &v10;
+		vector<double> u10;
+		vector<double> v10;
 	};
 
 	struct WindStress {
-		vector<double> &qx;
-		vector<double> &qy;
+		vector<double> qx;
+		vector<double> qy;
 	};
 
 	struct Wind {

@@ -4,9 +4,9 @@
 
 #include <generators/area/uniform_generator.h>
 #include <generators/dz/triple_point_generator.h>
-#include <generators/bathymetry/uniform_generator.h>
+#include <generators/bathymetry/cosine_generator.h>
 #include <generators/wind/uniform_generator.h>
-#include <generators/viscosity/uniform_generator.h>
+#include <generators/viscosity/linear_generator.h>
 
 #include "solver.h"
 
@@ -77,14 +77,31 @@ int main() {
 			}
 		);
 
-		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(w, l);
-		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(dzMin, dzMax, zm);
+		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
+		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
+			Generators::DZ::TriplePointGeneratorParams{
+				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
+					Calc::Grid::TriplePointVerticalStepSizeParams{.zm = zm, .dzMin = dzMin, .dzMax = dzMax}
+				)
+			}
+		);
 
-		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
+		auto hGenerator = make_shared<Generators::Bathymetry::CosineGenerator>(hm);
 
-		auto qGenerator = make_shared<Generators::Wind::UniformGenerator>(u10m, v10m, qxm, qym);
+		auto qGenerator = make_shared<Generators::Wind::UniformGenerator>(
+			Generators::Wind::UniformGeneratorParams{
+				.speed = Calc::Wind::SpeedVector { .u10 = u10m, .v10 = v10m },
+				.stress = Calc::Wind::StressVector { .qx = qxm, .qy = qym }
+			}
+		);
 
-		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
+		auto nuGenerator = make_shared<Generators::Viscosity::LinearGenerator>(
+			ht,
+			Calc::Turbulence::ViscosityState{
+				.nut = nut,
+				.nus = num
+			}
+		);
 
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},

@@ -72,6 +72,8 @@ TEST_CASE("Test viscosity linear generator generate") {
 			.h = hData
 	};
 
+	vector<double> v;
+
 	Data::WindCurrent windCurrent{
 			.speed = Data::WindSpeed {
 				.u10 = {},
@@ -82,8 +84,8 @@ TEST_CASE("Test viscosity linear generator generate") {
 				.qy = {}
 			},
 			.current = Data::Current {
-				.ua = {},
-				.va = {}
+				.ua = v,
+				.va = v
 			}
 	};
 

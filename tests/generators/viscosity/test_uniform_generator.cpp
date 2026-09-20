@@ -24,6 +24,8 @@ TEST_CASE("Test viscosity uniform generator generate") {
 
 	UniformGenerator generator(nu);
 
+	vector<double> v;
+
 	auto res = generator.generate(
 		VolumeState{
 			.nx = nx,
@@ -31,8 +33,8 @@ TEST_CASE("Test viscosity uniform generator generate") {
 			.nz = nz,
 			.dx = 0,
 			.dy = 0,
-			.dz = {},
-			.h = {}
+			.dz = v,
+			.h = v
 		},
 		WindCurrent{
 			.speed = WindSpeed {
@@ -44,8 +46,8 @@ TEST_CASE("Test viscosity uniform generator generate") {
 				.qy = {}
 			},
 			.current = Current {
-				.ua = {},
-				.va = {}
+				.ua = v,
+				.va = v
 			}
 		}
 	);

@@ -456,8 +456,8 @@ double Solver::maxAbsResidual(
 void Solver::writeData(
 	const TimeState& time,
 	const VolumeState& volume,
-	const Current& current,
-	const Wind& currentWindData,
+	Current& current,
+	Wind& currentWindData,
 	vector<double>& z,
 	const Directories& dirs,
 	vector<double>& uf,
@@ -562,9 +562,11 @@ void Solver::solve() {
 
 	vector<double> uf(nx * ny * nz);
 	vector<double> ud(nx * ny * nz);
+	vector<double> udt(nx * ny * nz);
 
 	vector<double> vf(nx * ny * nz);
 	vector<double> vd(nx * ny * nz);
+	vector<double> vdt(nx * ny * nz);
 
 	vector<double> u(nx * ny * nz);
 	vector<double> v(nx * ny * nz);
@@ -587,7 +589,7 @@ void Solver::solve() {
 
 	auto nu = nuGenerator->generate(
 		VolumeState{
-			.nx = nx, .ny = ny, .nz = nz,
+			.nx = nx, .ny = ny, .nz = nz + 1,
 			.dx = dx, .dy = dy, 
 			.dz = dz, .h = h
 		},
@@ -700,6 +702,9 @@ void Solver::solve() {
 			uf, vf, ud, vd
 		);
 
+		udt = ud;
+		vdt = vd;
+
 		createTridiagonalMatrix(
 			kb, dt, 
 			nx, ny, nz,
@@ -733,7 +738,7 @@ void Solver::solve() {
 
 			nu = nuGenerator->generate(
 				VolumeState{
-					.nx = nx, .ny = ny, .nz = nz,
+					.nx = nx, .ny = ny, .nz = nz + 1,
 					.dx = dx, .dy = dy,
 					.dz = dz, .h = h
 				},
@@ -811,10 +816,10 @@ void Solver::solve() {
 			auto umd = Utils::Data::maxAbsDifference(nx, ny, nz, up, uf);
 			auto vmd = Utils::Data::maxAbsDifference(nx, ny, nz, vp, vf);
 
-			auto maxRes = maxAbsResidual(nx, ny, nz, h, al, ac, ar, uf, vf, ud, vd);
+			auto maxRes = maxAbsResidual(nx, ny, nz, h, al, ac, ar, uf, vf, udt, vdt);
 
 			cout << format(
-				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={:.5f}, convergence of u={:.5f}, v={:.5f} with dt={:.5}, calc time={}",
+				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f} with dt={:.5}, calc time={}",
 				t, nuMax, maxRes, umd, vmd, dt, calcTime / 1000
 			) << endl;		
 
