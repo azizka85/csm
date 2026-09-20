@@ -9,7 +9,7 @@ using namespace std;
 namespace Calc::Data {
 	struct PhysicalParams {
 		double rho;
-		double f;
+		double f;		
 	};
 
 	struct DepthAveragedVelocity {
@@ -36,8 +36,8 @@ namespace Calc::Data {
 	};
 
 	struct SurfaceVector {
-		vector<double> vx;
-		vector<double> vy;
+		vector<double> &vx;
+		vector<double> &vy;
 	};
 
 	struct VolumeState {
@@ -48,24 +48,24 @@ namespace Calc::Data {
 		double dx;
 		double dy;
 
-		vector<double> dz;
-		vector<double> h;
+		vector<double> &dz;
+		vector<double> &h;
 	};
 
 	struct VolumeVector {
-		vector<double> vx;
-		vector<double> vy;
-		vector<double> vz;
+		vector<double> &vx;
+		vector<double> &vy;
+		vector<double> &vz;
 	};
 
 	struct WindSpeed {
-		vector<double> u10;
-		vector<double> v10;
+		vector<double> &u10;
+		vector<double> &v10;
 	};
 
 	struct WindStress {
-		vector<double> qx;
-		vector<double> qy;
+		vector<double> &qx;
+		vector<double> &qy;
 	};
 
 	struct Wind {
@@ -75,8 +75,8 @@ namespace Calc::Data {
 	};
 
 	struct Current {
-		vector<double> ua;
-		vector<double> va;
+		vector<double> &ua;
+		vector<double> &va;
 	};
 
 	struct WindCurrent {

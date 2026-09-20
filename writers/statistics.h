@@ -1,7 +1,6 @@
 #ifndef WRITERS_STATISTICS_H
 #define WRITERS_STATISTICS_H
 
-#include <span>
 #include <vector>
 
 #include <filesystem>
@@ -17,10 +16,9 @@ namespace Writers::Statistics {
 
 	class Writer {
 		public:			
-			template <size_t N>
 			path write(
-				span<Column, N> columns, 
-				vector<span<double, N>> data,
+				const vector<Column> &columns,
+				const vector<vector<double>> &data,
 				path outDir
 			);
 	};

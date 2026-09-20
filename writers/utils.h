@@ -15,7 +15,7 @@ namespace Writers::Utils {
 	void defaultWriteSurfaceDataHeader(
 		TimeState time,
 		SurfaceState surface,
-		ofstream file
+	ofstream &file
 	);
 
 	void writeVolumeTopHeader(TimeState time, VolumeState volume, ofstream& file);

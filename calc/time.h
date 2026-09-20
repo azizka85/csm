@@ -5,6 +5,7 @@ namespace Calc::Time {
 	struct State {
 		double t;
 		double dt;
+		double dtMax;
 		bool mult;
 	};
 
@@ -15,8 +16,7 @@ namespace Calc::Time {
 
 	struct DefaultAdjustTimeStepParams {
 		double b;
-		double tMax;
-		double dtMax;
+		double tMax;				
 	};
 
 	class DefaultAdjustTimeStep : public IAdjustTimeStep {

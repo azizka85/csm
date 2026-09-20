@@ -11,18 +11,17 @@ using namespace Utils;
 Calc::Time::DefaultAdjustTimeStep::DefaultAdjustTimeStep(DefaultAdjustTimeStepParams params) {
 	Checks::Time::checkB(params.b);
 	Checks::Time::checkTMax(params.tMax);
-	Checks::Time::checkDTMax(params.dtMax);
 
 	this->params = move(params);
 }
 
 double Calc::Time::DefaultAdjustTimeStep::calculate(Calc::Time::State state) {
 	auto b = params.b;
-	auto tMax = params.tMax;
-	auto dtMax = params.dtMax;
+	auto tMax = params.tMax;	
 
 	auto t = state.t;
 	auto dt = state.dt;
+	auto dtMax = state.dtMax;
 	auto mult = state.mult;
 
 	if (dt >= dtMax) {

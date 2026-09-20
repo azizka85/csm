@@ -3,9 +3,9 @@
 using namespace Writers;
 
 void Utils::defaultWriteSurfaceDataHeader(
-	TimeState time,
-	SurfaceState surface,
-	ofstream file
+    TimeState time,
+    SurfaceState surface,
+    ofstream &file
 ) {
     auto nx = surface.nx;
     auto ny = surface.ny;

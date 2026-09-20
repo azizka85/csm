@@ -1,3 +1,4 @@
+#include <format>
 #include <utils/checks/fs.h>
 
 #include "volume.h"
@@ -11,24 +12,23 @@ Writer::Writer(string fileName, WriteVolumeDataHeaderFn writeVolumeDataHeader) {
 	this->writeVolumeDataHeader = writeVolumeDataHeader;
 }
 
-template<size_t N>
-void Writer::write(TimeState time, VolumeState volume, span<Column, N> columns, span<DataKind, N> data, path outDir) {
+path Writer::write(TimeState time, VolumeState volume, const vector<Column> &columns, const vector<DataKind> &data, path outDir) {
 	FS::checkPath(outDir);
 
 	auto fName = fileName.empty() ? format("data.{:03}.vtk", time.m) : fileName;
 
-	auto filePath = outDir / path(fileName);
+	auto filePath = outDir / path(fName);
 
 	ofstream file(filePath);
 
 	writeVolumeDataHeader(time, volume, file);
 
-	for (size_t i = 0; i < N; i++) {
+	for (size_t i = 0; i < columns.size() && i < data.size(); i++) {
 		if (holds_alternative<VolumeVector>(data[i])) {
-			writeVolumeVector(columns[i].name, columns[i].precision, volume, data[i], file);
+			writeVolumeVector(columns[i].name, columns[i].precision, volume, get<VolumeVector>(data[i]), file);
 		}
 		else if (holds_alternative<vector<double>>(data[i])) {
-			writeVolumeScalar(columns[i].name, columns[i].precision, volume, data[i], file);
+			writeVolumeScalar(columns[i].name, columns[i].precision, volume, get<vector<double>>(data[i]), file);
 		}
 	}
 
@@ -58,7 +58,7 @@ void Writer::writeVolumeVector(string name, size_t precision, VolumeState volume
 	}
 }
 
-void Writer::writeVolumeScalar(string name, size_t precision, VolumeState volume, vector<double> data, ofstream &file) {
+void Writer::writeVolumeScalar(string name, size_t precision, VolumeState volume, const vector<double> &data, ofstream &file) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;

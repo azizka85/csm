@@ -1,3 +1,4 @@
+#include <format>
 #include <utils/checks/fs.h>
 
 #include "surface.h"
@@ -11,7 +12,7 @@ Writer::Writer(string fileName, WriteSurfaceDataHeaderFn writeSurfaceDataHeader)
 	this->writeSurfaceDataHeader = writeSurfaceDataHeader;
 }
 
-void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState surface, SurfaceVector vector, ofstream file) {
+void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState surface, SurfaceVector vector, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
@@ -29,7 +30,7 @@ void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState surf
 	}
 }
 
-void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState surface, vector<double> data, ofstream file) {
+void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState surface, const vector<double> &data, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
@@ -45,30 +46,29 @@ void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState surf
 	}
 }
 
-template<size_t N>
-inline path Writer::write(
-	TimeState time, 
-	SurfaceState surface, 
-	span<Column, N> columns, 
-	span<DataKind, N> data, 
+path Writer::write(
+	TimeState time,
+	SurfaceState surface,
+	const vector<Column>& columns,
+	const vector<DataKind>& data,
 	path outDir
 ) {
 	FS::checkPath(outDir);
 
 	auto fName = fileName.empty() ? format("data.{:03}.vtk", time.m) : fileName;
 
-	auto filePath = outDir / path(fileName);
+	auto filePath = outDir / path(fName);
 
 	ofstream file(filePath);
 
 	writeSurfaceDataHeader(time, surface, file);
 
-	for (size_t i = 0; i < N; i++) {
+	for (size_t i = 0; i < columns.size() && i < data.size(); i++) {
 		if (holds_alternative<SurfaceVector>(data[i])) {
-			writeSurfaceVector(columns[i].name, columns[i].precision, surface, data[i], file);
+			writeSurfaceVector(columns[i].name, columns[i].precision, surface, get<SurfaceVector>(data[i]), file);
 		}
 		else if (holds_alternative<vector<double>>(data[i])) {
-			writeSurfaceScalar(columns[i].name, columns[i].precision, surface, data[i], file);
+			writeSurfaceScalar(columns[i].name, columns[i].precision, surface, get<vector<double>>(data[i]), file);
 		}
 	}
 

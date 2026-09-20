@@ -1,7 +1,6 @@
 #ifndef WRITERS_VOLUME_H
 #define WRITERS_VOLUME_H
 
-#include <span>
 #include <vector>
 #include <variant>
 
@@ -20,7 +19,7 @@ namespace Writers::Volume {
 	using WriteVolumeDataHeaderFn = void(*) (
 		TimeState time,
 		VolumeState volume,
-		ofstream file
+		ofstream &file
 	);
 
 	using DataKind = variant<
@@ -35,18 +34,17 @@ namespace Writers::Volume {
 
 		public:
 			Writer(string fileName, WriteVolumeDataHeaderFn writeVolumeDataHeader);
-
-			template<size_t N>
-			void write(
+			
+			path write(
 				TimeState time,
 				VolumeState volume,
-				span<Column, N> columns,
-				span<DataKind, N> data,
+				const vector<Column> &columns,
+				const vector<DataKind> &data,
 				path outDir
 			);
 
 			void writeVolumeVector(string name, size_t precision, VolumeState volume, VolumeVector vector, ofstream &file);
-			void writeVolumeScalar(string name, size_t precision, VolumeState volume, vector<double> data, ofstream &file);
+			void writeVolumeScalar(string name, size_t precision, VolumeState volume, const vector<double> &data, ofstream &file);
 	};	
 }
 

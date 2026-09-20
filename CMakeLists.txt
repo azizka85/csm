@@ -48,4 +48,6 @@ add_subdirectory(calc)
 add_subdirectory(generators)
 add_subdirectory(writers)
 
+add_subdirectory(wind_induced_currents/davies85)
+
 add_subdirectory(tests)

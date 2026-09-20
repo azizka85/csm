@@ -8,10 +8,9 @@ using namespace Utils::Checks;
 
 using namespace Writers::Statistics;
 
-template <size_t N>
 path Writer::write(
-	span<Column, N> columns,
-	vector<span<double, N>> data,
+	const vector<Column> &columns,
+	const vector<vector<double>> &data,
 	path outDir
 ) {
 	FS::checkPath(outDir);
@@ -20,7 +19,7 @@ path Writer::write(
 
 	ofstream file(filePath);
 
-	for (size_t i = 0; i < N; i++) {
+	for (size_t i = 0; i < columns.size(); i++) {
 		if (i > 0) {
 			file << ", ";
 		}
@@ -31,7 +30,7 @@ path Writer::write(
 	file << endl;
 
 	for (size_t i = 0; i < data.size(); i++) {
-		for (size_t j = 0; j < N; j++) {
+		for (size_t j = 0; j < columns.size() && j < data[i].size(); j++) {
 			if (j > 0) {
 				file << ", ";
 			}
@@ -41,4 +40,6 @@ path Writer::write(
 
 		file << endl;
 	}
+
+	return filePath;
 }
