@@ -8,7 +8,7 @@
 using namespace std::filesystem;
 
 namespace Generators::Bathymetry {
-	class UniformGenerator : IGenerator {
+	class UniformGenerator : public IGenerator {
 		private:
 			double h;
 

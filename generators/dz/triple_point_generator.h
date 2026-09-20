@@ -9,12 +9,12 @@ using namespace Calc;
 
 namespace Generators::DZ {
 	struct TriplePointGeneratorParams {
-		unique_ptr<Grid::INonUniformVerticalStepSize> vertStep;
+		shared_ptr<Grid::INonUniformVerticalStepSize> vertStep;
 
 		string dirAttr;
 	};
 
-	class TriplePointGenerator : IGenerator {
+	class TriplePointGenerator : public IGenerator {
 		private:
 			TriplePointGeneratorParams params;
 

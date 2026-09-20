@@ -4,7 +4,7 @@
 #include "../viscosity.h"
 
 namespace Generators::Viscosity {
-	class UniformGenerator: IGenerator {
+	class UniformGenerator: public IGenerator {
 		private:
 			double nu;
 

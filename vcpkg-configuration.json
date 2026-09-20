@@ -1,0 +1,5 @@
+{
+  "overlay-ports": [
+    "./overlay_vcpkg/libaec"
+  ]
+}

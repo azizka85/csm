@@ -1,33 +1,35 @@
+#include <format>
+
+#include <doctest/doctest.h>
+
 #include <calc/wind.h>
+
+using namespace std;
 
 using namespace Calc;
 
-BOOST_AUTO_TEST_CASE(test_default_wind_stress_params) {
+TEST_CASE("Test default wind stress params") {
     Wind::DefaultStressParams params{
         .rhoAir = 0,
         .cd = -1
     };
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Wind::DefaultStress wind(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("rho should be > 0, but it is {}", params.rhoAir);
-        }
+        format("rho should be > 0, but it is {}", params.rhoAir).c_str(),
+        runtime_error
     );
 
     params.rhoAir = 1.225;
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Wind::DefaultStress wind(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("cd should be > 0, but it is {}", params.cd);
-        }
+        format("cd should be > 0, but it is {}", params.cd).c_str(),
+        runtime_error
     );
 }
 
-BOOST_AUTO_TEST_CASE(test_default_wind_stress_calc) {
+TEST_CASE("Test default wind stress calc") {
     double epsilon = 1e-15;
 
     Wind::DefaultStressParams params{
@@ -37,7 +39,7 @@ BOOST_AUTO_TEST_CASE(test_default_wind_stress_calc) {
 
     Wind::DefaultStress wind(params);
 
-    BOOST_CHECK_EQUAL(
+    CHECK_EQ(
         wind.dirName("wind"),
         format("wind, rho_air={}, cd={}", params.rhoAir, params.cd)
     );
@@ -49,13 +51,13 @@ BOOST_AUTO_TEST_CASE(test_default_wind_stress_calc) {
 
     auto stressMagnitude1 = sqrt(stress1.qx*stress1.qx + stress1.qy*stress1.qy);
 
-    BOOST_CHECK_LT(abs(stressMagnitude1 - 2.9645), epsilon);
+    CHECK_LT(abs(stressMagnitude1 - 2.9645), epsilon);
 
     auto stress2 = wind.calculate(Wind::SpeedVector {
         .u10 = 22,
         .v10 = 0
     });
 
-    BOOST_CHECK_EQUAL(stress2.qx, 1.48225);
-    BOOST_CHECK_EQUAL(stress2.qy, 0);
+    CHECK_EQ(stress2.qx, 1.48225);
+    CHECK_EQ(stress2.qy, 0);
 }

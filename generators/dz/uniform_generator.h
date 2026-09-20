@@ -4,7 +4,7 @@
 #include "../dz.h"
 
 namespace Generators::DZ {
-	class UniformGenerator: IGenerator {
+	class UniformGenerator: public IGenerator {
 		private:
 			double dz;
 

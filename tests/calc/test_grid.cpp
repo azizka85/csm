@@ -1,64 +1,58 @@
+#include <format>
+
+#include <doctest/doctest.h>
+
 #include <calc/grid.h>
 
 using namespace Calc;
 
-BOOST_AUTO_TEST_CASE(test_triple_point_vertical_step_size_params) {
+TEST_CASE("Test triple point vertical step size params") {
     Grid::TriplePointVerticalStepSizeParams params {
         .zm = 0.3,
         .dzMin = -0.1,
         .dzMax = -0.1
     };
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Grid::TriplePointVerticalStepSize dz(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("zm should be in the range [0.5, 1], but it is {}", params.zm);
-        }
+        format("zm should be in the range [0.5, 1], but it is {}", params.zm).c_str(),
+        runtime_error
     );
 
     params.zm = 1.2;
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Grid::TriplePointVerticalStepSize dz(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("zm should be in the range [0.5, 1], but it is {}", params.zm);
-        }
+        format("zm should be in the range [0.5, 1], but it is {}", params.zm).c_str(),
+        runtime_error
     );
 
     params.zm = 0.7;
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Grid::TriplePointVerticalStepSize dz(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("dz should be > 0, but it is {}", params.dzMin);
-        }
+        format("dz should be > 0, but it is {}", params.dzMin).c_str(),
+        runtime_error
     );
 
     params.dzMin = 0.1;
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Grid::TriplePointVerticalStepSize dz(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("dz should be > 0, but it is {}", params.dzMax);
-        }
+        format("dz should be > 0, but it is {}", params.dzMax).c_str(),
+        runtime_error
     );
 
     params.dzMax = 0.1;
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Grid::TriplePointVerticalStepSize dz(params),
-        runtime_error,
-        [params](const runtime_error& e) {
-            return string(e.what()) == format("dzMin should be < dzMax, but they are {} and {}", params.dzMin, params.dzMax);
-        }
+        format("dzMin should be < dzMax, but they are {} and {}", params.dzMin, params.dzMax).c_str(),
+        runtime_error
     );
 }
 
-BOOST_AUTO_TEST_CASE(test_triple_point_vertical_step_size_calc) {
+TEST_CASE("Test triple point vertical step size calc") {
     Grid::TriplePointVerticalStepSizeParams params{
         .zm = 0.51,
         .dzMin = 0.002,
@@ -67,7 +61,7 @@ BOOST_AUTO_TEST_CASE(test_triple_point_vertical_step_size_calc) {
 
     Grid::TriplePointVerticalStepSize dz(params);
 
-    BOOST_CHECK_EQUAL(
+    CHECK_EQ(
         dz.dirName("tpdz"), 
         format(
             "tpdz, dz={}-{}, z={}",
@@ -75,9 +69,9 @@ BOOST_AUTO_TEST_CASE(test_triple_point_vertical_step_size_calc) {
         )
     );
 
-    BOOST_CHECK_EQUAL(dz.calculate(0), params.dzMin);
+    CHECK_EQ(dz.calculate(0), params.dzMin);
 
-    BOOST_CHECK_EQUAL(dz.calculate(params.zm), params.dzMin + params.dzMax);
+    CHECK_EQ(dz.calculate(params.zm), params.dzMin + params.dzMax);
 
-    BOOST_CHECK_GT(dz.calculate(1), params.dzMin);
+    CHECK_GT(dz.calculate(1), params.dzMin);
 }

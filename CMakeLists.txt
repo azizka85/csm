@@ -44,6 +44,8 @@ add_subdirectory(utils)
 
 add_subdirectory(slae)
 add_subdirectory(calc)
+
 add_subdirectory(generators)
+add_subdirectory(writers)
 
 add_subdirectory(tests)

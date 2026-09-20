@@ -4,9 +4,9 @@
 
 using namespace GeographicLib;
 
-using namespace Generators::Utils;
+using namespace Generators;
 
-Data::CartesianBound toCartesian(Data::GeoBound bound) {
+Data::CartesianBound Utils::toCartesian(Data::GeoBound bound) {
 	vector<Data::GeoPoint> corners = {
 		Data::GeoPoint {
 			.lat = bound.latMin,
@@ -53,7 +53,7 @@ Data::CartesianBound toCartesian(Data::GeoBound bound) {
 	};
 }
 
-Data::GeoBound toGeo(Data::CartesianBound bound) {
+Data::GeoBound Utils::toGeo(Data::CartesianBound bound) {
 	vector<Data::CartesianPoint> corners = {
 		Data::CartesianPoint {
 			.x = bound.minX,

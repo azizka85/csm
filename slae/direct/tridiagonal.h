@@ -34,7 +34,7 @@ namespace SLAE::Direct::Tridiagonal {
 		double r0;
 	};
 
-	class UniformMatrix: ISLAE {
+	class UniformMatrix: public ISLAE {
 		private:
 			UniformMatrixParams params;
 
@@ -52,7 +52,7 @@ namespace SLAE::Direct::Tridiagonal {
 		span<const double> r;
 	};
 
-	class Matrix : ISLAE {
+	class Matrix : public ISLAE {
 		private:
 			MatrixParams params;
 

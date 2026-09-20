@@ -2,13 +2,17 @@
 
 #include <cmath>
 
+#include <vector>
+
 #include <stdexcept>
+
+#include <doctest/doctest.h>
 
 #include <slae/direct/tridiagonal.h>
 
 using namespace SLAE::Direct;
 
-BOOST_AUTO_TEST_CASE(test_tridiagonal_matrix) {    
+TEST_CASE("Test tridiagonal matrix") {
     double epsilon = 1e-13;
 
     double h = 1;
@@ -34,72 +38,64 @@ BOOST_AUTO_TEST_CASE(test_tridiagonal_matrix) {
     vector<double> d(ny-1);
     span<double> ds(d);
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         matrix.solve(Tridiagonal::SolutionState{
            .u = us,
            .d = ds
         }),
-        runtime_error,
-        [ny](const runtime_error& e) {
-            return string(e.what()) == format(
-                "The lengths of the u should be {}, but now the length of the u is {}",
-                ny - 1, ny
-            );
-        }
+        format(
+            "The lengths of the u should be {}, but now the length of the u is {}",
+            ny - 1, ny
+        ).c_str(),
+        runtime_error
     );    
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         matrix.residual(Tridiagonal::ResidualState{
            .u = us,
            .d = ds
         }),
-        runtime_error,
-        [ny](const runtime_error& e) {
-            return string(e.what()) == format(
-                "The lengths of the u should be {}, but now the length of the u is {}",
-                ny - 1, ny
-            );
-        }
+        format(
+            "The lengths of the u should be {}, but now the length of the u is {}",
+            ny - 1, ny
+        ).c_str(),
+        runtime_error
     );
 
     vector<double> l(ny - 1);
     vector<double> c(ny);
     vector<double> r(ny - 1);
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Tridiagonal::Matrix(Tridiagonal::MatrixParams {
             .l = l,
             .c = c,
             .r = r
         }),
-        runtime_error,
-        [ny](const runtime_error& e) {
-            return string(e.what()) == format(
-                "The lengths of the l and c should be equal, but now the length of the l is {} and c is {}",
-                ny - 1, ny
-            );
-        }
+        format(
+            "The lengths of the l and c should be equal, but now the length of the l is {} and c is {}",
+            ny - 1, ny
+        ).c_str(),
+        runtime_error
     );
 
     l = vector<double>(ny);
 
-    BOOST_CHECK_EXCEPTION(
+    CHECK_THROWS_WITH_AS(
         Tridiagonal::Matrix(Tridiagonal::MatrixParams{
             .l = l,
             .c = c,
             .r = r
         }),
-        runtime_error,
-        [ny](const runtime_error& e) {
-            return string(e.what()) == format(
-                "The lengths of the r and c should be equal, but now the length of the r is {} and c is {}",
-                ny - 1, ny
-            );
-        }
+        format(
+            "The lengths of the r and c should be equal, but now the length of the r is {} and c is {}",
+            ny - 1, ny
+        ).c_str(),
+        runtime_error
     );
 }
 
-BOOST_AUTO_TEST_CASE(test_laplace_equation_with_dirichlet_bc) {
+TEST_CASE("Test laplace equation with dirichlet bc") {
     double diff_epsilon = 1e-13;
     double res_epsilon = 1e-15;
 
@@ -140,7 +136,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_dirichlet_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto diff = abs(u[i] - i * dy);
 
-        BOOST_CHECK_LT(diff, diff_epsilon);
+        CHECK_LT(diff, diff_epsilon);
     }
 
     ds = span<double>(d1);
@@ -153,7 +149,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_dirichlet_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto res = abs(d1[i]);
 
-        BOOST_CHECK_LT(res, res_epsilon);
+        CHECK_LT(res, res_epsilon);
     }
 
     vector<double> l(ny, 1);
@@ -194,7 +190,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_dirichlet_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto diff = abs(u[i] - i * dy);
 
-        BOOST_CHECK_LT(diff, diff_epsilon);
+        CHECK_LT(diff, diff_epsilon);
     }
 
     ds = span<double>(d1);
@@ -207,11 +203,11 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_dirichlet_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto res = abs(d1[i]);
 
-        BOOST_CHECK_LT(res, res_epsilon);
+        CHECK_LT(res, res_epsilon);
     }
 }
 
-BOOST_AUTO_TEST_CASE(test_laplace_equation_with_neumann_bc) {
+TEST_CASE("Test laplace equation with neumann bc") {
     double diff_epsilon = 1e-12;
     double res_epsilon = 1e-15;
 
@@ -252,7 +248,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_neumann_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto diff = abs(u[i] - 1);
 
-        BOOST_CHECK_LT(diff, diff_epsilon);
+        CHECK_LT(diff, diff_epsilon);
     }
 
     ds = span<double>(d1);
@@ -265,7 +261,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_neumann_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto res = abs(d1[i]);
 
-        BOOST_CHECK_LT(res, res_epsilon);
+        CHECK_LT(res, res_epsilon);
     }
 
     vector<double> l(ny, 1);
@@ -306,7 +302,7 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_neumann_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto diff = abs(u[i] - 1);
 
-        BOOST_CHECK_LT(diff, diff_epsilon);
+        CHECK_LT(diff, diff_epsilon);
     }
 
     ds = span<double>(d1);
@@ -319,6 +315,6 @@ BOOST_AUTO_TEST_CASE(test_laplace_equation_with_neumann_bc) {
     for (size_t i = 0; i < ny; i++) {
         auto res = abs(d1[i]);
 
-        BOOST_CHECK_LT(res, res_epsilon);
+        CHECK_LT(res, res_epsilon);
     }
 }

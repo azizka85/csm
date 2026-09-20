@@ -18,7 +18,7 @@ namespace Calc::Grid {
 		double dzMax;
 	};
 
-	class TriplePointVerticalStepSize : INonUniformVerticalStepSize {
+	class TriplePointVerticalStepSize : public INonUniformVerticalStepSize {
 		private:
 			TriplePointVerticalStepSizeParams params;
 

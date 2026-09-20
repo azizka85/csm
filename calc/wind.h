@@ -27,7 +27,7 @@ namespace Calc::Wind {
 		double cd;
 	};
 
-	class DefaultStress: IStress {
+	class DefaultStress: public IStress {
 		private:
 			DefaultStressParams params;
 

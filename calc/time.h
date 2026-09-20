@@ -19,7 +19,7 @@ namespace Calc::Time {
 		double dtMax;
 	};
 
-	class DefaultAdjustTimeStep : IAdjustTimeStep {
+	class DefaultAdjustTimeStep : public IAdjustTimeStep {
 		private:
 			DefaultAdjustTimeStepParams params;
 

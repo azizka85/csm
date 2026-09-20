@@ -4,7 +4,7 @@
 #include "../area.h"
 
 namespace Generators::Area {
-	class UniformGenerator : IGenerator {
+	class UniformGenerator : public IGenerator {
 		private:
 			Geometry geom;
 

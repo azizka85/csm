@@ -13,15 +13,14 @@ namespace Generators::Wind {
 		Calc::Wind::StressVector stress;
 	};
 
-	class UniformGenerator: IGenerator {
+	class UniformGenerator: public IGenerator {
 		private:
 			UniformGeneratorParams params;
 
 		public:
 			UniformGenerator(UniformGeneratorParams params);
-
-			virtual path addDirectory(path outDir) = 0;
-			virtual vector<Data::Wind> generate(size_t nx, size_t ny) = 0;
+			path addDirectory(path outDir) override;
+			vector<Data::Wind> generate(size_t nx, size_t ny) override;
 	};
 }
 

@@ -8,7 +8,7 @@
 
 
 namespace Generators::Viscosity {
-	class LinearGenerator : IGenerator {
+	class LinearGenerator : public IGenerator {
 		private:
 			double ht;
 			Turbulence::ViscosityState viscosity;

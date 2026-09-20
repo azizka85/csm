@@ -3,14 +3,14 @@
 using namespace Generators::Viscosity;
 
 WindSpeedGenerator::WindSpeedGenerator(
-	unique_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence, 
-	unique_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity, 
-	unique_ptr<Turbulence::IViscosity> viscosity, 
+	shared_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence,
+	shared_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity,
+	shared_ptr<Turbulence::IViscosity> viscosity,
 	string dirAttr
 ) {
-	this->frictionalInfluence = move(frictionalInfluence);
-	this->tidalSurfaceViscosity = move(tidalSurfaceViscosity);
-	this->viscosity = move(viscosity);
+	this->frictionalInfluence = frictionalInfluence;
+	this->tidalSurfaceViscosity = tidalSurfaceViscosity;
+	this->viscosity = viscosity;
 
 	this->dirAttr = move(dirAttr);
 }

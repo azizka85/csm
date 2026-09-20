@@ -33,7 +33,7 @@ namespace Calc::Turbulence {
 		FrictionParams friction;
 	};
 
-	struct TurbulenceParams {
+	struct Params {
 		double k0;
 		double k;
 		double sigma;
@@ -57,11 +57,11 @@ namespace Calc::Turbulence {
 	};
 
 	struct DefaultViscosityParams {
-		TurbulenceParams turbulence;
+		Params turbulence;
 		Data::PhysicalParams phys;
 	};
 
-	class DefaultViscosity : IFrictionalInfluence, ITidalSurfaceViscosity, IViscosity {
+	class DefaultViscosity : public IFrictionalInfluence, public ITidalSurfaceViscosity, public IViscosity {
 		private:
 			DefaultViscosityParams params;
 

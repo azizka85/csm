@@ -6,19 +6,19 @@
 #include "../viscosity.h"
 
 namespace Generators::Viscosity {
-	class WindSpeedGenerator : IGenerator {
+	class WindSpeedGenerator : public IGenerator {
 	private:
-		unique_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence;
-		unique_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity;
-		unique_ptr<Turbulence::IViscosity> viscosity;
+		shared_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence;
+		shared_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity;
+		shared_ptr<Turbulence::IViscosity> viscosity;
 
 		string dirAttr;
 
 	public:
 		WindSpeedGenerator(
-			unique_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence,
-			unique_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity,
-			unique_ptr<Turbulence::IViscosity> viscosity,
+			shared_ptr<Turbulence::IFrictionalInfluence> frictionalInfluence,
+			shared_ptr<Turbulence::ITidalSurfaceViscosity> tidalSurfaceViscosity,
+			shared_ptr<Turbulence::IViscosity> viscosity,
 			string dirAttr
 		);
 
