@@ -342,11 +342,13 @@ void Solver::solve() {
 
 	auto start = high_resolution_clock::now();
 
+	m += 1;
+
 	while (t <= endTime) {
-		kernel.calcUA(dt);
+		kernel.calcUA(dt);		
 		kernel.swapUA();
 
-		kernel.calcVA(dt);
+		kernel.calcVA(dt);		
 		kernel.swapVA();
 
 		kernel.calcRHS(dt);
@@ -456,7 +458,7 @@ void Solver::solve() {
 			auto maxRes = kernel.maxAbsResidual();
 
 			cout << format(
-				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f}, z={:.9f} with dt={:.5}, calc time={}",
+				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f}, z={:.19f} with dt={:.5}, calc time={}",
 				t, nuMax, maxRes, umd, vmd, zmd, dt, calcTime / 1000
 			) << endl;
 
@@ -480,7 +482,7 @@ void Solver::solve() {
 			Writers::Statistics::Column{ .name = "max_res", .precision = 18 },
 			Writers::Statistics::Column{ .name = "umd", .precision = 5 },
 			Writers::Statistics::Column{ .name = "vmd", .precision = 5 },
-			Writers::Statistics::Column{ .name = "zmd", .precision = 9 }
+			Writers::Statistics::Column{ .name = "zmd", .precision = 19 }
 	},
 		statistics,
 		dirs.root

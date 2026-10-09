@@ -151,7 +151,7 @@ __global__ void __calcUA__(
 				size_t kl = j + (i - 1) * ny;
 
 
-				u1a[k] -= g * dt * (z[kr] - z[kl]) / 2 / dx;
+				u1a[k] = u1a[k] - g * dt * (z[kr] - z[kl]) / 2 / dx;
 			}
 		}
 	}
@@ -195,7 +195,7 @@ __global__ void __calcVA__(
 				size_t ku = j + 1 + i * ny;
 				size_t kd = j - 1 + i * ny;
 
-				v1a[k] -= g * dt * (z[ku] - z[kd]) / 2 / dy;
+				v1a[k] = v1a[k] - g * dt * (z[ku] - z[kd]) / 2 / dy;
 			}
 		}
 	}
@@ -415,8 +415,8 @@ void Kernel::calcUVF() {
 }
 
 void Kernel::updateUVF() {
-	cudaMemcpy(uf.data(), d_uf, nx * ny * sizeof(double), cudaMemcpyDeviceToHost);
-	cudaMemcpy(vf.data(), d_vf, nx * ny * sizeof(double), cudaMemcpyDeviceToHost);
+	cudaMemcpy(uf.data(), d_uf, nx * ny * nz * sizeof(double), cudaMemcpyDeviceToHost);
+	cudaMemcpy(vf.data(), d_vf, nx * ny * nz * sizeof(double), cudaMemcpyDeviceToHost);
 }
 
 void Kernel::updateUVFTDevice() {
@@ -498,14 +498,14 @@ __global__ void __calcZ__(
 				size_t kr = j + (i + 1) * ny;
 				size_t kl = j + (i - 1) * ny;
 
-				z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
+				z[k] = z[k] - dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
 			}
 
 			if (j > 0 && j < ny - 1) {
 				size_t ku = j + 1 + i * ny;
 				size_t kd = j - 1 + i * ny;
 
-				z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
+				z[k] = z[k] - dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
 			}
 		}
 	}
@@ -537,8 +537,8 @@ double Kernel::maxAbsZDifference() {
 
 	cublasSetPointerMode(handle, CUBLAS_POINTER_MODE_DEVICE);
 
-	cublasDaxpy(handle, nx * ny * nz, d_alpha, d_z, 1, d_zt, 1);
-	cublasIdamax(handle, nx * ny * nz, d_zt, 1, d_res_idx);
+	cublasDaxpy(handle, nx * ny, d_alpha, d_z, 1, d_zt, 1);
+	cublasIdamax(handle, nx * ny, d_zt, 1, d_res_idx);
 
 	__extract_element__ << < 1, 1 >> > (d_zt, d_res_idx, d_res);
 

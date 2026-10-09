@@ -674,6 +674,8 @@ void Solver::solve() {
 
 	auto start = high_resolution_clock::now();
 
+	m += 1;
+
 	while (t <= endTime) {
 		calcUA(
 			nx, ny, nz,

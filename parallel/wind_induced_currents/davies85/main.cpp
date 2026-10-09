@@ -3,7 +3,7 @@
 #include <calc/time.h>
 
 #include <generators/area/uniform_generator.h>
-#include <generators/dz/triple_point_generator.h>
+#include <generators/dz/uniform_generator.h>
 #include <generators/bathymetry/uniform_generator.h>
 #include <generators/wind/uniform_generator.h>
 #include <generators/viscosity/uniform_generator.h>
@@ -78,13 +78,7 @@ int main() {
 		);
 
 		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
-			Generators::DZ::TriplePointGeneratorParams{
-				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
-					Calc::Grid::TriplePointVerticalStepSizeParams{.zm = zm, .dzMin = dzMin, .dzMax = dzMax}
-				)
-			}
-		);
+		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMax);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
