@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.28)
 
 project(csm LANGUAGES CXX)
 
@@ -49,5 +49,9 @@ add_subdirectory(generators)
 add_subdirectory(writers)
 
 add_subdirectory(wind_induced_currents/davies85)
+
+add_subdirectory(parallel/slae)
+
+add_subdirectory(parallel/wind_induced_currents/davies85)
 
 add_subdirectory(tests)

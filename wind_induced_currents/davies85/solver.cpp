@@ -614,6 +614,8 @@ void Solver::solve() {
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 	double dtp = dt;
 
+	bool updateDT = false;
+
 	vector<double> zp(nx * ny);
 
 	vector<double> up(nx * ny * nz);
@@ -682,6 +684,8 @@ void Solver::solve() {
 			uf, u1a
 		);
 
+		swap(ua, u1a);
+
 		calcVA(
 			nx, ny, nz,
 			phys, kb, g,
@@ -690,6 +694,8 @@ void Solver::solve() {
 			ua, va, z,
 			vf, v1a
 		);
+
+		swap(va, v1a);
 
 		calcRHS(
 			nx, ny, nz, 
@@ -720,9 +726,6 @@ void Solver::solve() {
 			ud, vd
 		);
 
-		swap(ua, u1a);
-		swap(va, v1a);
-
 		calcZ(
 			nx, ny, nz, 
 			dt, dx, dy,
@@ -736,43 +739,36 @@ void Solver::solve() {
 		if (currentWindIndex < windData.size() - 1 && t >= windData[currentWindIndex + 1].time) {
 			currentWindIndex += 1;			
 
-			nu = nuGenerator->generate(
-				VolumeState{
-					.nx = nx, .ny = ny, .nz = nz + 1,
-					.dx = dx, .dy = dy,
-					.dz = dz, .h = h
-				},
-				WindCurrent{
-					.speed = WindSpeed {
-						.u10 = windData[currentWindIndex].speed.u10,
-						.v10 = windData[currentWindIndex].speed.v10
-					},
-					.stress = WindStress {
-						.qx = windData[currentWindIndex].stress.qx,
-						.qy = windData[currentWindIndex].stress.qy
-					},
-					.current = Current {
-						.ua = ua,
-						.va = va
-					}
-				}
-			);			
-
-			nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
-
-			dt = timeStep->calculate(Time::State{
-				.t = t,
-				.dt = dtp,
-				.dtMax = dtMax,
-				.mult = false
-			});
-
-			cout << format("Update wind data dt = {}", dt) << endl;
+			updateDT = true;
 		}
+
+		nu = nuGenerator->generate(
+			VolumeState{
+				.nx = nx, .ny = ny, .nz = nz + 1,
+				.dx = dx, .dy = dy,
+				.dz = dz, .h = h
+			},
+			WindCurrent{
+				.speed = WindSpeed {
+					.u10 = windData[currentWindIndex].speed.u10,
+					.v10 = windData[currentWindIndex].speed.v10
+				},
+				.stress = WindStress {
+					.qx = windData[currentWindIndex].stress.qx,
+					.qy = windData[currentWindIndex].stress.qy
+				},
+				.current = Current {
+					.ua = ua,
+					.va = va
+				}
+			}
+		);
+
+		nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
-		if (dt1 < dtp) {
+		if (dt1 < dtp || updateDT) {
 			dtp = dt1;
 
 			dt = timeStep->calculate(Time::State{
@@ -781,6 +777,10 @@ void Solver::solve() {
 				.dtMax = dtMax,
 				.mult = false
 			});
+
+			updateDT = false;
+
+			cout << format("Update dt = {}", dt) << endl;
 		}
 		else {
 			dt = timeStep->calculate(Time::State{

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.28)
 
 project(generators LANGUAGES CXX)
 
@@ -17,7 +17,7 @@ add_library(generators STATIC
 
     bathymetry/uniform_generator.cpp
     bathymetry/cosine_generator.cpp
-    bathymetry/gebco_generator
+    bathymetry/gebco_generator.cpp
 
     dz/uniform_generator.cpp
     dz/triple_point_generator.cpp

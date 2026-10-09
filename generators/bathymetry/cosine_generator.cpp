@@ -27,7 +27,7 @@ vector<double> Generators::Bathymetry::CosineGenerator::generate(double nx, doub
         for (int j = 0; j < ny; j++) {
             int id = j + i * ny;
 
-            h[id] = hm * (1 - 0.8 * cos(2 * M_PI * (i / (nx - 1.) + j / (ny - 1.)))) / 2;
+            h[id] = hm * (1 - 0.98 * cos(2 * M_PI * (i / (nx - 1.) + j / (ny - 1.)))) / 2;
         }
     }
 
