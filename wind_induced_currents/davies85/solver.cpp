@@ -817,12 +817,13 @@ void Solver::solve() {
 
 			auto umd = Utils::Data::maxAbsDifference(nx, ny, nz, up, uf);
 			auto vmd = Utils::Data::maxAbsDifference(nx, ny, nz, vp, vf);
+			auto zm = Utils::Data::maxAbsDifference(nx, ny, zp, z);
 
 			auto maxRes = maxAbsResidual(nx, ny, nz, h, al, ac, ar, uf, vf, udt, vdt);
 
 			cout << format(
-				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f} with dt={:.5}, calc time={}",
-				t, nuMax, maxRes, umd, vmd, dt, calcTime / 1000
+				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f}, zm={:.19f} with dt={:.5}, calc time={}",
+				t, nuMax, maxRes, umd, vmd, zm, dt, calcTime / 1000
 			) << endl;		
 
 			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd });
@@ -845,7 +846,8 @@ void Solver::solve() {
 			Writers::Statistics::Column{ .name = "calc_time", .precision = 0 },
 			Writers::Statistics::Column{ .name = "max_res", .precision = 18 },
 			Writers::Statistics::Column{ .name = "umd", .precision = 5 },
-			Writers::Statistics::Column{ .name = "vmd", .precision = 5 }
+			Writers::Statistics::Column{ .name = "vmd", .precision = 5 },
+			Writers::Statistics::Column{ .name = "zm", .precision = 19 }
 		},
 		statistics,
 		dirs.root
