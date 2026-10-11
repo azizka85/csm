@@ -13,7 +13,7 @@
 
 using namespace std::chrono;
 
-using namespace Parallel::WindInducedCurrents::Davies85;
+using namespace Parallel::DoublePrecision::WindInducedCurrents::Davies85;
 
 Solver::Solver(
 	PhysicalParams phys,
@@ -146,11 +146,11 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		SurfaceState{ .nx = volume.nx, .ny = volume.ny, .dx = volume.dx, .dy = volume.dy },
 		vector<Column>{
-		Column{ .name = "va", .precision = 3 },
+			Column{ .name = "va", .precision = 3 },
 			Column{ .name = "w10", .precision = 3 },
 			Column{ .name = "q", .precision = 3 },
 			Column{ .name = "z", .precision = 7 }
-	},
+		},
 		vector<Writers::Surface::DataKind>{
 		SurfaceVector{
 			.vx = currentWindData.current.ua,

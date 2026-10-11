@@ -54,6 +54,7 @@ add_subdirectory(writers)
 
 add_subdirectory(wind_induced_currents/davies85)
 
-add_subdirectory(parallel/wind_induced_currents/davies85)
+add_subdirectory(parallel/single_precision/wind_induced_currents/davies85)
+add_subdirectory(parallel/double_precision/wind_induced_currents/davies85)
 
 add_subdirectory(tests)

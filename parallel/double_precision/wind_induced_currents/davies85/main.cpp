@@ -10,7 +10,7 @@
 
 #include "solver.h"
 
-using namespace Parallel::WindInducedCurrents::Davies85;
+using namespace Parallel::DoublePrecision::WindInducedCurrents::Davies85;
 
 int main() {
 	const double b = 1.1;

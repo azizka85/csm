@@ -1,5 +1,5 @@
-#ifndef PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
-#define PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
+#ifndef PARALLEL_DOUBLE_PRECISION_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
+#define PARALLEL_DOUBLE_PRECISION_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
 
 #include <CL/opencl.hpp>
 
@@ -10,7 +10,7 @@
 using namespace std;
 using namespace std::filesystem;
 
-namespace Parallel::WindInducedCurrents::Davies85 {
+namespace Parallel::DoublePrecision::WindInducedCurrents::Davies85 {
 	class Kernel {
 	private:
 		cl::NDRange surfaceRange;
