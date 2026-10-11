@@ -18,6 +18,11 @@ namespace Utils::Data {
         vector<double>& u1
     );
 
+    double maxAbsElem(
+        int nx, int ny, int nz,
+        vector<double>& u
+    );
+
     void updateData(
         int nx, int ny,
         vector<double>& u,

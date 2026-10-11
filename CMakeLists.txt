@@ -5,6 +5,10 @@ project(csm LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+function(target_copy_opencl TARGET_NAME)
+    set_property(TARGET ${TARGET_NAME} APPEND PROPERTY ASSETS_TO_COPY "opencl")
+endfunction()
+
 function(target_copy_bathymetry_data TARGET_NAME)
     set_property(TARGET ${TARGET_NAME} APPEND PROPERTY ASSETS_TO_COPY "data/bathymetry")
 endfunction()
@@ -49,8 +53,6 @@ add_subdirectory(generators)
 add_subdirectory(writers)
 
 add_subdirectory(wind_induced_currents/davies85)
-
-add_subdirectory(parallel/slae)
 
 add_subdirectory(parallel/wind_induced_currents/davies85)
 

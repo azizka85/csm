@@ -102,19 +102,19 @@ Directories Solver::createDirectory() {
 }
 
 void Solver::setInitialCondition(
-	int nx, int ny, int nz,
+	size_t nx, size_t ny, size_t nz,
 	vector<double>& uf,
 	vector<double>& vf,
 	vector<double>& ua,
 	vector<double>& va,
 	vector<double>& z
 ) {
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			int p = j + i * ny;
+	for (size_t i = 0; i < nx; i++) {
+		for (size_t j = 0; j < ny; j++) {
+			size_t p = j + i * ny;
 
-			for (int k = 0; k < nz; k++) {
-				int id = k + p * nz;
+			for (size_t k = 0; k < nz; k++) {
+				size_t id = k + p * nz;
 
 				uf[id] = 0;
 				vf[id] = 0;
@@ -128,7 +128,7 @@ void Solver::setInitialCondition(
 }
 
 void Solver::calcUA(
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	PhysicalParams phys, 
 	double kb, double g, 
 	double dx, double dt, 
@@ -148,20 +148,28 @@ void Solver::calcUA(
 			if (h[k] > 0) {
 				u1a[k] = ua[k] + phys.f * va[k] * dt - kb * dt * (uf[idx] + ua[k]) / h[k] + qx[k] * dt / phys.rho / h[k];
 
-				if (i > 0 && i < nx - 1) {
-					int kr = j + (i + 1) * ny;
-					int kl = j + (i - 1) * ny;
+				size_t kr = k;
+				size_t kl = k;
 
-
-					u1a[k] -= g * dt * (z[kr] - z[kl]) / 2 / dx;
+				if (i == 0) {
+					kr = j + ny;
+					kl = j + (nx - 1) * ny;					
+				} else if (i == nx - 1) {
+					kr = j;
+					kl = j + (nx - 2) * ny;
+				} else {
+					kr = j + (i + 1) * ny;
+					kl = j + (i - 1) * ny;
 				}
+
+				u1a[k] -= g * dt * (z[kr] - z[kl]) / 2 / dx;
 			}
 		}
 	}
 }
 
 void Solver::calcVA(
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	PhysicalParams phys, 
 	double kb, double g, 
 	double dy, double dt, 
@@ -181,19 +189,29 @@ void Solver::calcVA(
 			if (h[k] > 0) {
 				v1a[k] = va[k] - phys.f * ua[k] * dt - kb * dt * (vf[idx] + va[k]) / h[k] + qy[k] * dt / phys.rho / h[k];
 
-				if (j > 0 && j < ny - 1) {
-					int ku = j + 1 + i * ny;
-					int kd = j - 1 + i * ny;
+				size_t ku = k;
+				size_t kd = k;
 
-					v1a[k] -= g * dt * (z[ku] - z[kd]) / 2 / dy;
+				if (j == 0) {
+					ku = 1 + i * ny;
+					kd = ny - 1 + i * ny;
 				}
+				else if (j == ny - 1) {
+					ku = i * ny;
+					kd = ny - 2 + i * ny;
+				} else {
+					ku = j + 1 + i * ny;
+					kd = j - 1 + i * ny;					
+				}
+
+				v1a[k] -= g * dt * (z[ku] - z[kd]) / 2 / dy;
 			}
 		}
 	}
 }
 
 void Solver::calcRHS(
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	PhysicalParams phys, double kb, 
 	double dx, double dy, double dt, 
 	vector<double>& dz, 
@@ -218,10 +236,10 @@ void Solver::calcRHS(
 				for (size_t k = 0; k < nz; k++) {
 					size_t id = k + p * nz;
 
-					int idu = k + 1 + p * nz;
-					int idd = k - 1 + p * nz;
+					size_t idu = k + 1 + p * nz;
+					size_t idd = k - 1 + p * nz;
 
-					int idb = nz - 1 + p * nz;
+					size_t idb = nz - 1 + p * nz;
 
 					if (k == 0) {
 						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[id];
@@ -284,7 +302,7 @@ void Solver::calcRHS(
 
 void Solver::createTridiagonalMatrix(
 	double kb, double dt, 
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	vector<double>& dz, 
 	vector<double>& h, 
 	vector<double>& nu, 
@@ -327,7 +345,7 @@ void Solver::createTridiagonalMatrix(
 }
 
 void Solver::calcUVF(
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	vector<double>& h, 
 	vector<double>& al, 
 	vector<double>& ac, 
@@ -369,7 +387,7 @@ void Solver::calcUVF(
 }
 
 void Solver::calcZ(
-	int nx, int ny, int nz, 
+	size_t nx, size_t ny, size_t nz,
 	double dt, double dx, double dy, 
 	vector<double>& h, 
 	vector<double>& ua, 
@@ -381,19 +399,75 @@ void Solver::calcZ(
 			size_t k = j + i * ny;
 
 			if (h[k] > 0) {
-				if (i > 0 && i < nx - 1) {
-					int kr = j + (i + 1) * ny;
-					int kl = j + (i - 1) * ny;
+				size_t kr = j + (i + 1) * ny;
+				size_t kl = j + (i - 1) * ny;
 
-					z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
+				size_t ku = j + 1 + i * ny;
+				size_t kd = j - 1 + i * ny;
+
+				if (i == 0) {
+					if (j == 0) {
+						kr = ny;
+						kl = (nx - 1) * ny;
+
+						ku = 1;
+						kd = ny - 1;
+					}
+					else if (j == ny - 1) {
+						kr = ny - 1 + ny;
+						kl = ny - 1 + (nx - 1) * ny;
+
+						ku = 0;
+						kd = ny - 2;
+					}
+					else {
+						kr = j + ny;
+						kl = j + (nx - 1) * ny;
+
+						ku = j + 1;
+						kd = j - 1;
+					}
+				}
+				else if (i == nx - 1) {
+					if (j == 0) {
+						kr = 0;
+						kl = (nx - 2) * ny;
+
+						ku = 1 + (nx - 1) * ny;
+						kd = ny - 1 + (nx - 1) * ny;
+					}
+					else if (j == ny - 1) {
+						kr = ny - 1;
+						kl = ny - 1 + (nx - 2) * ny;
+
+						ku = (nx - 1) * ny;
+						kd = ny - 2 + (nx - 1) * ny;;
+					}
+					else {
+						kr = j;
+						kl = j + (nx - 2) * ny;
+
+						ku = j + 1 + (nx - 1) * ny;
+						kd = j - 1 + (nx - 1) * ny;
+					}
+				}
+				else if (j == 0) {
+					kr = (i + 1) * ny;
+					kl = (i - 1) * ny;
+
+					ku = 1 + i * ny;
+					kd = ny - 1 + i * ny;
+				}
+				else if (j == ny - 1) {
+					kr = ny - 1 + (i + 1) * ny;
+					kl = ny - 1 + (i - 1) * ny;
+
+					ku = i * ny;
+					kd = ny - 2 + i * ny;
 				}
 
-				if (j > 0 && j < ny - 1) {
-					int ku = j + 1 + i * ny;
-					int kd = j - 1 + i * ny;
-
-					z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
-				}
+				z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
+				z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
 			}
 		}
 	}

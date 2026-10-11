@@ -40,6 +40,24 @@ double Data::maxAbsDifference(int nx, int ny, int nz, vector<double>& u, vector<
     return maxDiff;
 }
 
+double Data::maxAbsElem(int nx, int ny, int nz, vector<double>& u) {
+    double maxElem = 0;
+
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            int p = j + i * ny;
+
+            for (int k = 0; k < nz; k++) {
+                int id = k + p * nz;
+
+                maxElem = max(maxElem, abs(u[id]));
+            }
+        }
+    }
+
+    return maxElem;
+}
+
 void Data::updateData(int nx, int ny, vector<double>& u, vector<double>& u1) {
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < ny; j++) {

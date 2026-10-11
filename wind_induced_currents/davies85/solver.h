@@ -54,7 +54,7 @@ namespace WindInducedCurrents::Davies85 {
 		Directories createDirectory();
 
 		void setInitialCondition(
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			vector<double>& uf,
 			vector<double>& vf,
 			vector<double>& ua,
@@ -63,7 +63,7 @@ namespace WindInducedCurrents::Davies85 {
 		);
 
 		void calcUA(
-			int nx, int ny, int nz, 
+			size_t nx, size_t ny, size_t nz,
 			PhysicalParams phys, 
 			double kb, double g, 
 			double dx, double dt, 
@@ -77,7 +77,7 @@ namespace WindInducedCurrents::Davies85 {
 		);
 
 		void calcVA(
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			PhysicalParams phys,
 			double kb, double g,
 			double dy, double dt,
@@ -91,7 +91,7 @@ namespace WindInducedCurrents::Davies85 {
 		);
 
 		void calcRHS(
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			PhysicalParams phys, double kb, 
 			double dx, double dy, double dt,
 			vector<double>& dz, 
@@ -111,7 +111,7 @@ namespace WindInducedCurrents::Davies85 {
 
 		void createTridiagonalMatrix(
 			double kb, double dt,
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			vector<double>& dz,
 			vector<double>& h,
 			vector<double>& nu,
@@ -121,7 +121,7 @@ namespace WindInducedCurrents::Davies85 {
 		);
 
 		void calcUVF(
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			vector<double>& h,
 			vector<double>& al,
 			vector<double>& ac,
@@ -133,7 +133,7 @@ namespace WindInducedCurrents::Davies85 {
 		);
 
 		void calcZ(
-			int nx, int ny, int nz,
+			size_t nx, size_t ny, size_t nz,
 			double dt, double dx, double dy,
 			vector<double>& h,
 			vector<double>& ua,

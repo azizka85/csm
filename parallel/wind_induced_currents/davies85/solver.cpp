@@ -231,6 +231,9 @@ void Solver::solve() {
 	vector<double> uf(nx * ny * nz);
 	vector<double> vf(nx * ny * nz);
 
+	vector<double> ud(nx * ny * nz);
+	vector<double> vd(nx * ny * nz);
+
 	vector<double> u(nx * ny * nz);
 	vector<double> v(nx * ny * nz);
 	vector<double> w(nx * ny * nz);
@@ -281,6 +284,11 @@ void Solver::solve() {
 
 	bool updateDT = false;
 
+	auto zp = z;
+
+	auto up = uf;
+	auto vp = vf;
+
 	double t = 0;
 	double tn = outputTimeStep;
 
@@ -327,12 +335,13 @@ void Solver::solve() {
 	);
 
 	Kernel kernel(
-		nx, ny, 
-		dx, dy, 
-		phys.rho, phys.f, kb, g, 
-		dz, h, 
-		ua, va, z, 
-		uf, vf, 
+		nx, ny,
+		dx, dy,
+		phys.rho, phys.f, kb, g,
+		dz, h,
+		ua, va, z,
+		uf, vf,
+		ud, vd,
 		u10, v10,
 		qx, qy,
 		nu
@@ -345,10 +354,10 @@ void Solver::solve() {
 	m += 1;
 
 	while (t <= endTime) {
-		kernel.calcUA(dt);		
+		kernel.calcUA(dt);
 		kernel.swapUA();
 
-		kernel.calcVA(dt);		
+		kernel.calcVA(dt);
 		kernel.swapVA();
 
 		kernel.calcRHS(dt);
@@ -374,29 +383,9 @@ void Solver::solve() {
 			updateDT = true;
 		}
 
-		nu = nuGenerator->generate(
-			VolumeState{
-				.nx = nx, .ny = ny, .nz = nz + 1,
-				.dx = dx, .dy = dy,
-				.dz = dz, .h = h
-			},
-			WindCurrent{
-				.speed = WindSpeed {
-					.u10 = u10,
-					.v10 = v10
-				},
-				.stress = WindStress {
-					.qx = qx,
-					.qy = qy
-				},
-				.current = Current {
-					.ua = ua,
-					.va = va
-				}
-			}
-		);
+		kernel.calcNU();
 
-		nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+		// TODO: nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
@@ -430,10 +419,13 @@ void Solver::solve() {
 
 			calcTime += duration;
 
+			kernel.calcResidual();
+
 			kernel.updateUVA();
 			kernel.updateUVF();
+			kernel.updateUVD();
 			kernel.updateZ();
-			kernel.updateNU();
+			kernel.updateNU();			
 
 			writeData(
 				TimeState{ .m = m, .t = t },
@@ -450,12 +442,14 @@ void Solver::solve() {
 				volumeNodeWriter
 			);
 
-			auto umd = kernel.maxAbsUFDifference();
-			auto vmd = kernel.maxAbsVFDifference();
+			auto umd = Utils::Data::maxAbsDifference(nx, ny, nz, up, uf);
+			auto vmd = Utils::Data::maxAbsDifference(nx, ny, nz, vp, vf);
+			auto zmd = Utils::Data::maxAbsDifference(nx, ny, zp, z);
 
-			auto zmd = kernel.maxAbsZDifference();
-
-			auto maxRes = kernel.maxAbsResidual();
+			auto maxRes = max(
+				Utils::Data::maxAbsElem(nx, ny, nz, ud),
+				Utils::Data::maxAbsElem(nx, ny, nz, vd)
+			);
 
 			cout << format(
 				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f}, z={:.19f} with dt={:.5}, calc time={}",
@@ -464,8 +458,10 @@ void Solver::solve() {
 
 			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd, zmd });
 
-			kernel.updateUVFTDevice();
-			kernel.updateZTDevice();
+			up = uf;
+			vp = vf;
+			
+			zp = z;
 
 			m += 1;
 			tn = t + outputTimeStep;

@@ -1,139 +1,131 @@
 #ifndef PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
 #define PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_KERNEL_H
 
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
+#include <CL/opencl.hpp>
 
 #include <vector>
 
+#include <filesystem>
+
 using namespace std;
+using namespace std::filesystem;
 
-namespace Parallel {
-	namespace WindInducedCurrents {
-		namespace Davies85 {
-			class Kernel {
-			private:
-				dim3 threadsPerBlock;
-				dim3 blocksPerGrid2D;
-				dim3 blocksPerGrid3D;
+namespace Parallel::WindInducedCurrents::Davies85 {
+	class Kernel {
+	private:
+		cl::NDRange surfaceRange;
+		cl::NDRange volumeRange;
 
-				size_t nx;
-				size_t ny;
-				size_t nz;
+		int nx, ny, nz;
+		double dx, dy;
+		double rho, f, kb, g;
 
-				double dx;
-				double dy;
+		vector<double>& dz;
+		vector<double>& h;
 
-				double rho;
-				double f;
+		vector<double>& ua;
+		vector<double>& va;
 
-				double kb; 
-				double g;
+		vector<double>& z;
 
-				vector<double>& dz;
-				vector<double>& h;
+		vector<double>& uf;
+		vector<double>& vf;
 
-				vector<double>& ua;
-				vector<double>& va;
+		vector<double>& ud;
+		vector<double>& vd;
 
-				vector<double>& z;
+		vector<double>& u10;
+		vector<double>& v10;
 
-				vector<double>& uf;
-				vector<double>& vf;
+		vector<double>& qx;
+		vector<double>& qy;
 
-				vector<double>& u10;
-				vector<double>& v10;
+		vector<double>& nu;
 
-				vector<double>& qx;
-				vector<double>& qy;
+		cl::Buffer bufferDZ;
+		cl::Buffer bufferH;
 
-				vector<double>& nu;
+		cl::Buffer bufferUA;
+		cl::Buffer bufferU1A;
 
-				double* d_dz;
-				double* d_h;
+		cl::Buffer bufferVA;
+		cl::Buffer bufferV1A;
 
-				double* d_ua;
-				double* d_u1a;
+		cl::Buffer bufferZ;
 
-				double* d_va;
-				double* d_v1a;
+		cl::Buffer bufferUF;
+		cl::Buffer bufferUD;
+		cl::Buffer bufferUDT;
 
-				double* d_z;
-				double* d_zt;
+		cl::Buffer bufferVF;
+		cl::Buffer bufferVD;
+		cl::Buffer bufferVDT;
 
-				double* d_uf;
-				double* d_uft;
-				double* d_ud;
-				double* d_udt;
+		cl::Buffer bufferAL;
+		cl::Buffer bufferAC;
+		cl::Buffer bufferAR;
 
-				double* d_vf;
-				double* d_vft;
-				double* d_vd;
-				double* d_vdt;
+		cl::Buffer bufferU10;
+		cl::Buffer bufferV10;
 
-				double* d_al;
-				double* d_ac;
-				double* d_ar;
+		cl::Buffer bufferQX;
+		cl::Buffer bufferQY;
 
-				double* d_u10;
-				double* d_v10;
+		cl::Buffer bufferNU;
+						
+		cl::CommandQueue queue;
 
-				double* d_qx;
-				double* d_qy;
+		cl::Kernel calcUAKernel;
+		cl::Kernel calcVAKernel;
 
-				double* d_nu;
+		cl::Kernel calcRHSKernel;
+		cl::Kernel createTridiagonalMatrixKernel;
+		cl::Kernel calcUVFKernel;
+		cl::Kernel calcResidualKernel;
 
-				double* d_alpha;
+		cl::Kernel calcZKernel;
 
-				double* d_res;
-				double* d_res2;
+		string loadKernelSource(path filePath);
+		void loadKernelSources(cl::Program::Sources& sources);
 
-				int* d_res_idx;
+	public:
+		Kernel(
+			int nx, int ny,
+			double dx, double dy,
+			double rho, double f, double kb, double g,
+			vector<double>& dz, vector<double>& h,
+			vector<double>& ua, vector<double>& va,
+			vector<double>& z,
+			vector<double>& uf, vector<double>& vf,
+			vector<double>& ud, vector<double>& vd,
+			vector<double>& u10, vector<double>& v10,
+			vector<double>& qx, vector<double>& qy,
+			vector<double>& nu
+		);
 
-			public:
-				Kernel(
-					size_t nx, size_t ny,
-					double dx, double dy, 
-					double rho, double f, double kb, double g, 
-					vector<double>& dz, vector<double>& h,
-					vector<double>& ua, vector<double>& va,
-					vector<double>& z,
-					vector<double>& uf, vector<double>& vf,
-					vector<double>& u10, vector<double>& v10,
-					vector<double>& qx, vector<double>& qy,
-					vector<double>& nu
-				);
+		void calcUA(double dt);
+		void calcVA(double dt);
 
-				void calcUA(double dt);
-				void calcVA(double dt);
-				
-				void updateUVA();
-				void swapUA();
-				void swapVA();
+		void updateUVA();
+		void swapUA();
+		void swapVA();
 
-				void calcRHS(double dt);
-				void createTridiagonalMatrix(double dt);
-				
-				void calcUVF();
-				void updateUVF();
-				void updateUVFTDevice();
-				double maxAbsUFDifference();
-				double maxAbsVFDifference();
+		void calcRHS(double dt);
+		void createTridiagonalMatrix(double dt);
+		void calcResidual();
 
-				void calcZ(double dt);
-				void updateZ();
-				void updateZTDevice();
-				double maxAbsZDifference();
+		void calcUVF();
+		void updateUVF();
+		void updateUVD();
 
-				double maxAbsResidual();
+		void calcZ(double dt);
+		void updateZ();
 
-				void updateQUV10Device();
+		void updateQUV10Device();
 
-				void calcNU();
-				void updateNU();
-			};
-		}
-	}
+		void calcNU();
+		void updateNU();
+	};
 }
 
 #endif
