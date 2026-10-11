@@ -21,7 +21,7 @@ path WindSpeedGenerator::addDirectory(path outDir) {
 	return outDir / viscosity->dirName(attr);
 }
 
-vector<double> WindSpeedGenerator::generate(Data::VolumeState volume, Data::WindCurrent windCurrent) {
+vector<double> WindSpeedGenerator::generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;

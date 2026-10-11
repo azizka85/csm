@@ -16,7 +16,7 @@ namespace Generators::Viscosity {
 	class IGenerator {
 		public:
 			virtual path addDirectory(path outDir) = 0;
-			virtual vector<double> generate(Data::VolumeState volume, Data::WindCurrent windCurrent) = 0;
+			virtual vector<double> generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) = 0;
 	};
 }
 

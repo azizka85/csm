@@ -23,7 +23,7 @@ namespace Generators::Viscosity {
 		);
 
 		path addDirectory(path outDir) override;
-		vector<double> generate(Data::VolumeState volume, Data::WindCurrent windCurrent) override;
+		vector<double> generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) override;
 	};
 }
 

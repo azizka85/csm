@@ -36,14 +36,14 @@ TEST_CASE("Test viscosity uniform generator generate") {
 			.dz = v,
 			.h = v
 		},
-		WindCurrent{
-			.speed = WindSpeed {
-				.u10 = {},
-				.v10 = {}
+		WindCurrentData{
+			.speed = WindSpeedData {
+				.u10 = v,
+				.v10 = v
 			},
-			.stress = WindStress {
-				.qx = {},
-				.qy = {}
+			.stress = WindStressData {
+				.qx = v,
+				.qy = v
 			},
 			.current = Current {
 				.ua = v,

@@ -530,8 +530,7 @@ double Solver::maxAbsResidual(
 void Solver::writeData(
 	const TimeState& time,
 	const VolumeState& volume,
-	Current& current,
-	Wind& currentWindData,
+	WindCurrentData currentWindData,
 	vector<double>& z,
 	const Directories& dirs,
 	vector<double>& uf,
@@ -557,8 +556,8 @@ void Solver::writeData(
 		},
 		vector<Writers::Surface::DataKind>{
 			SurfaceVector {
-				.vx = current.ua,
-				.vy = current.va
+				.vx = currentWindData.current.ua,
+				.vy = currentWindData.current.va
 			},
 			SurfaceVector {
 				.vx = currentWindData.speed.u10,
@@ -661,20 +660,26 @@ void Solver::solve() {
 
 	size_t currentWindIndex = 0;
 
+	vector<double>& u10 = windData[currentWindIndex].speed.u10;
+	vector<double>& v10 = windData[currentWindIndex].speed.v10;
+
+	vector<double>& qx = windData[currentWindIndex].stress.qx;
+	vector<double>& qy = windData[currentWindIndex].stress.qy;
+
 	auto nu = nuGenerator->generate(
 		VolumeState{
 			.nx = nx, .ny = ny, .nz = nz + 1,
 			.dx = dx, .dy = dy, 
 			.dz = dz, .h = h
 		},
-		WindCurrent{
-			.speed = WindSpeed {
-				.u10 = windData[currentWindIndex].speed.u10,
-				.v10 = windData[currentWindIndex].speed.v10
+		WindCurrentData{
+			.speed = WindSpeedData {
+				.u10 = u10,
+				.v10 = v10
 			},
-			.stress = WindStress {
-				.qx = windData[currentWindIndex].stress.qx,
-				.qy = windData[currentWindIndex].stress.qy
+			.stress = WindStressData {
+				.qx = qx,
+				.qy = qy
 			},
 			.current = Current {
 				.ua = ua,
@@ -732,14 +737,26 @@ void Solver::solve() {
 	writeData(
 		TimeState{ .m = m, .t = t },
 		volume,
-		current,
-		windData[currentWindIndex],
-		z, 
+		WindCurrentData{
+			.speed = WindSpeedData {
+				.u10 = u10,
+				.v10 = v10
+			},
+			.stress = WindStressData {
+				.qx = qx,
+				.qy = qy
+			},
+			.current = Current {
+				.ua = ua,
+				.va = va
+			}
+		},
+		z,
 		dirs,
 		uf, ua, u,
 		vf, va, v,
 		w, nu,
-		surfaceWriter, 
+		surfaceWriter,
 		volumeElemWriter,
 		volumeNodeWriter
 	);
@@ -813,7 +830,13 @@ void Solver::solve() {
 		n += 1;
 
 		if (currentWindIndex < windData.size() - 1 && t >= windData[currentWindIndex + 1].time) {
-			currentWindIndex += 1;			
+			currentWindIndex += 1;	
+
+			u10 = windData[currentWindIndex].speed.u10;
+			v10 = windData[currentWindIndex].speed.v10;
+
+			qx = windData[currentWindIndex].stress.qx;
+			qy = windData[currentWindIndex].stress.qy;
 
 			updateDT = true;
 		}
@@ -824,14 +847,14 @@ void Solver::solve() {
 				.dx = dx, .dy = dy,
 				.dz = dz, .h = h
 			},
-			WindCurrent{
-				.speed = WindSpeed {
-					.u10 = windData[currentWindIndex].speed.u10,
-					.v10 = windData[currentWindIndex].speed.v10
+			WindCurrentData{
+				.speed = WindSpeedData {
+					.u10 = u10,
+					.v10 = v10
 				},
-				.stress = WindStress {
-					.qx = windData[currentWindIndex].stress.qx,
-					.qy = windData[currentWindIndex].stress.qy
+				.stress = WindStressData {
+					.qx = qx,
+					.qy = qy
 				},
 				.current = Current {
 					.ua = ua,
@@ -877,8 +900,20 @@ void Solver::solve() {
 			writeData(
 				TimeState{ .m = m, .t = t },
 				volume,
-				current,
-				windData[currentWindIndex],
+				WindCurrentData{
+					.speed = WindSpeedData {
+						.u10 = u10,
+						.v10 = v10
+					},
+					.stress = WindStressData {
+						.qx = qx,
+						.qy = qy
+					},
+					.current = Current {
+						.ua = ua,
+						.va = va
+					}
+				},
 				z,
 				dirs,
 				uf, ua, u,

@@ -80,9 +80,15 @@ TEST_CASE("Test viscosity wind speed generator generate") {
 			.h = hData
 	};
 
-	Data::WindCurrent windCurrent{
-		.speed = windData.speed,
-		.stress = windData.stress,
+	Data::WindCurrentData windCurrent{
+		.speed = Data::WindSpeedData {
+			.u10 = windData.speed.u10,
+			.v10 = windData.speed.v10
+		},
+		.stress = Data::WindStressData {
+			.qx = windData.stress.qx,
+			.qy = windData.stress.qy
+		},
 		.current = Data::Current {
 			.ua = ua,
 			.va = va
