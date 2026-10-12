@@ -20,24 +20,26 @@ inline void viscosity(
 
     int p = j + i*ny;
 
-	double ut;
-	double ht;
+	if (h[p] > 0) {
+		double ut;
+		double ht;
 
-	double nus;
-	double nut;
+		double nus;
+		double nut;
 
-	calc_turbulence_frictional_influence(k0, rho, f, qx[p], qy[p], &ut, &ht);
-	calc_viscosity(k, sigma, num, u10[p], v10[p], ua[p], va[p], &nus, &nut);
+		calc_turbulence_frictional_influence(k0, rho, f, qx[p], qy[p], &ut, &ht);
+		calc_viscosity(k, sigma, num, u10[p], v10[p], ua[p], va[p], &nus, &nut);
 
-	double z = 0;
+		double z = 0;
 
-	for (int l = 0; l < nz + 1; l++) {
-		int id = l + p * (nz + 1);
+		for (int l = 0; l < nz + 1; l++) {
+			int id = l + p * (nz + 1);
 
-		nu[id] = (z < ht) ? nus - (nus - nut) * z / ht : nut;
+			nu[id] = (z < ht) ? nus - (nus - nut) * z / ht : nut;
 
-		if (l < nz) {
-			z += h[p] * dz[l];
+			if (l < nz) {
+				z += h[p] * dz[l];
+			}
 		}
 	}
 }

@@ -17,6 +17,9 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::NDRange surfaceRange;
 		cl::NDRange volumeRange;
 
+		cl::NDRange valueRange;
+		cl::NDRange rowRange;
+
 		Davies85::Data& data;
 
 		cl::Buffer bufferDZ;
@@ -49,6 +52,10 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::Buffer bufferQY;
 
 		cl::Buffer bufferNU;
+
+		cl::Buffer bufferV;
+		cl::Buffer bufferR;
+		cl::Buffer bufferP;
 						
 		cl::CommandQueue queue;
 
@@ -63,6 +70,10 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::Kernel calcZKernel;
 
 		cl::Kernel calcNUKernel;
+
+		cl::Kernel calcMaxPlaneKernel;
+		cl::Kernel calcMaxRowKernel;
+		cl::Kernel calcMaxKernel;
 
 		vector<float> scratch;
 

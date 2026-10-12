@@ -3,7 +3,6 @@
 #include <stdexcept>
 
 #include "kernel.h"
-#include "kernel.h"
 
 using namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision;
 
@@ -14,6 +13,9 @@ Kernel::Kernel(
 {
 	surfaceRange = cl::NDRange(data.nx, data.ny);
 	volumeRange = cl::NDRange(data.nx, data.ny, data.nz);
+
+	valueRange = cl::NDRange(1);
+	rowRange = cl::NDRange(data.nx);
 
 	vector<cl::Platform> platforms;
 
@@ -93,6 +95,10 @@ Kernel::Kernel(
 	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * (data.nz + 1));
 	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * (data.nz + 1), data.nu.data());
 
+	bufferV = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double));
+	bufferR = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx);
+	bufferP = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+
 	calcUAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_ua");
 
 	calcUAKernel.setArg(0, data.f);
@@ -100,9 +106,9 @@ Kernel::Kernel(
 	calcUAKernel.setArg(2, data.g);
 	calcUAKernel.setArg(3, data.rho);
 	calcUAKernel.setArg(4, data.dx);
-	calcUAKernel.setArg(6, data.nx);
-	calcUAKernel.setArg(7, data.ny);
-	calcUAKernel.setArg(8, data.nz);
+	calcUAKernel.setArg(6, (int)data.nx);
+	calcUAKernel.setArg(7, (int)data.ny);
+	calcUAKernel.setArg(8, (int)data.nz);
 	calcUAKernel.setArg(9, bufferH);
 	calcUAKernel.setArg(10, bufferQX);
 	calcUAKernel.setArg(11, bufferUA);
@@ -118,9 +124,9 @@ Kernel::Kernel(
 	calcVAKernel.setArg(2, data.g);
 	calcVAKernel.setArg(3, data.rho);
 	calcVAKernel.setArg(4, data.dy);
-	calcVAKernel.setArg(6, data.nx);
-	calcVAKernel.setArg(7, data.ny);
-	calcVAKernel.setArg(8, data.nz);
+	calcVAKernel.setArg(6, (int)data.nx);
+	calcVAKernel.setArg(7, (int)data.ny);
+	calcVAKernel.setArg(8, (int)data.nz);
 	calcVAKernel.setArg(9, bufferH);
 	calcVAKernel.setArg(10, bufferQY);
 	calcVAKernel.setArg(11, bufferUA);
@@ -136,8 +142,8 @@ Kernel::Kernel(
 	calcRHSKernel.setArg(2, data.rho);
 	calcRHSKernel.setArg(3, data.dx);
 	calcRHSKernel.setArg(4, data.dy);
-	calcRHSKernel.setArg(6, data.ny);
-	calcRHSKernel.setArg(7, data.nz);
+	calcRHSKernel.setArg(6, (int)data.ny);
+	calcRHSKernel.setArg(7, (int)data.nz);
 	calcRHSKernel.setArg(8, bufferNU);
 	calcRHSKernel.setArg(9, bufferDZ);
 	calcRHSKernel.setArg(10, bufferH);
@@ -153,8 +159,8 @@ Kernel::Kernel(
 	createTridiagonalMatrixKernel = cl::Kernel(program, "wind_induced_currents_davies85_create_tridiagonal_matrix");
 
 	createTridiagonalMatrixKernel.setArg(0, data.kb);
-	createTridiagonalMatrixKernel.setArg(2, data.ny);
-	createTridiagonalMatrixKernel.setArg(3, data.nz);
+	createTridiagonalMatrixKernel.setArg(2, (int)data.ny);
+	createTridiagonalMatrixKernel.setArg(3, (int)data.nz);
 	createTridiagonalMatrixKernel.setArg(4, bufferNU);
 	createTridiagonalMatrixKernel.setArg(5, bufferDZ);
 	createTridiagonalMatrixKernel.setArg(6, bufferH);
@@ -164,8 +170,8 @@ Kernel::Kernel(
 
 	calcUVFKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_uvf");
 
-	calcUVFKernel.setArg(0, data.ny);
-	calcUVFKernel.setArg(1, data.nz);
+	calcUVFKernel.setArg(0, (int)data.ny);
+	calcUVFKernel.setArg(1, (int)data.nz);
 	calcUVFKernel.setArg(2, bufferH);
 	calcUVFKernel.setArg(3, bufferAL);
 	calcUVFKernel.setArg(4, bufferAC);
@@ -177,8 +183,8 @@ Kernel::Kernel(
 
 	calcResidualKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_residual");
 
-	calcResidualKernel.setArg(0, data.ny);
-	calcResidualKernel.setArg(1, data.nz);
+	calcResidualKernel.setArg(0, (int)data.ny);
+	calcResidualKernel.setArg(1, (int)data.nz);
 	calcResidualKernel.setArg(2, bufferH);
 	calcResidualKernel.setArg(3, bufferAL);
 	calcResidualKernel.setArg(4, bufferAC);
@@ -192,9 +198,9 @@ Kernel::Kernel(
 
 	calcZKernel.setArg(0, data.dx);
 	calcZKernel.setArg(1, data.dy);
-	calcZKernel.setArg(3, data.nx);
-	calcZKernel.setArg(4, data.ny);
-	calcZKernel.setArg(5, data.nz);
+	calcZKernel.setArg(3, (int)data.nx);
+	calcZKernel.setArg(4, (int)data.ny);
+	calcZKernel.setArg(5, (int)data.nz);
 	calcZKernel.setArg(6, bufferH);
 	calcZKernel.setArg(7, bufferUA);
 	calcZKernel.setArg(8, bufferVA);
@@ -208,8 +214,8 @@ Kernel::Kernel(
 	calcNUKernel.setArg(3, data.k);
 	calcNUKernel.setArg(4, data.sigma);
 	calcNUKernel.setArg(5, data.num);
-	calcNUKernel.setArg(6, data.ny);
-	calcNUKernel.setArg(7, data.nz);
+	calcNUKernel.setArg(6, (int)data.ny);
+	calcNUKernel.setArg(7, (int)data.nz);
 	calcNUKernel.setArg(8, bufferDZ);
 	calcNUKernel.setArg(9, bufferH);
 	calcNUKernel.setArg(10, bufferU10);
@@ -219,6 +225,25 @@ Kernel::Kernel(
 	calcNUKernel.setArg(14, bufferUA);
 	calcNUKernel.setArg(15, bufferVA);
 	calcNUKernel.setArg(16, bufferNU);
+
+	calcMaxPlaneKernel = cl::Kernel(program, "utils_max_plane");
+
+	calcMaxPlaneKernel.setArg(0, (int)data.ny);
+	calcMaxPlaneKernel.setArg(1, (int)data.nz + 1);
+	calcMaxPlaneKernel.setArg(2, bufferNU);
+	calcMaxPlaneKernel.setArg(3, bufferP);
+
+	calcMaxRowKernel = cl::Kernel(program, "utils_max_row");
+
+	calcMaxRowKernel.setArg(0, (int)data.ny);
+	calcMaxRowKernel.setArg(1, bufferP);
+	calcMaxRowKernel.setArg(2, bufferR);
+
+	calcMaxKernel = cl::Kernel(program, "utils_max");
+
+	calcMaxKernel.setArg(0, (int)data.nx);
+	calcMaxKernel.setArg(1, bufferR);
+	calcMaxKernel.setArg(2, bufferV);
 }
 
 string Kernel::loadKernelSource(path filePath) {
@@ -242,6 +267,12 @@ void Kernel::loadKernelSources(
 		)
 	);
 
+	sources.push_back(
+		loadKernelSource(
+			"opencl/double_precision/utils/max.cl"
+		)
+	);
+	
 	sources.push_back(
 		loadKernelSource(
 			viscosityKernelSource
@@ -343,7 +374,15 @@ void Kernel::calcNU() {
 }
 
 double Kernel::calcNUMax() {
-	return 0.0;
+	double nuMax = 0;
+
+	auto err = queue.enqueueNDRangeKernel(calcMaxPlaneKernel, cl::NullRange, surfaceRange, cl::NullRange);
+	err = queue.enqueueNDRangeKernel(calcMaxRowKernel, cl::NullRange, rowRange, cl::NullRange);
+	err = queue.enqueueNDRangeKernel(calcMaxKernel, cl::NullRange, valueRange, cl::NullRange);
+
+	err = queue.enqueueReadBuffer(bufferV, CL_TRUE, 0, sizeof(double), &nuMax);
+
+	return nuMax;
 }
 
 void Kernel::updateNU() {
