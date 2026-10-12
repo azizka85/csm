@@ -3,8 +3,9 @@
 #include <stdexcept>
 
 #include "kernel.h"
+#include "kernel.h"
 
-using namespace Parallel::DoublePrecision::WindInducedCurrents::Davies85;
+using namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision;
 
 Kernel::Kernel(
 	int nx, int ny,
@@ -63,63 +64,75 @@ Kernel::Kernel(
 		bool ok = true;
 	}
 
-	bufferDZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nz);
-	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(double) * nz, dz.data());
+	vector<float> dzF(dz.begin(), dz.end());
+	bufferDZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nz);
+	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(float) * nz, dzF.data());
 
-	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(double) * nx * ny, h.data());
+	vector<float> hF(h.begin(), h.end());
+	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(float) * nx * ny, hF.data());
 
-	bufferUA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * nx * ny, ua.data());
+	vector<float> uaF(ua.begin(), ua.end());
+	bufferUA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(float) * nx * ny, uaF.data());
 
-	bufferU1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
+	bufferU1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
 
-	bufferVA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * nx * ny, va.data());
+	vector<float> vaF(va.begin(), va.end());
+	bufferVA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferVA, CL_TRUE, 0, sizeof(float) * nx * ny, vaF.data());
 
-	bufferV1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
+	bufferV1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
 
-	bufferZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * nx * ny, z.data());
+	vector<float> zF(z.begin(), z.end());
+	bufferZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferZ, CL_TRUE, 0, sizeof(float) * nx * ny, zF.data());
 
-	bufferUF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueWriteBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, uf.data());
+	vector<float> ufF(uf.begin(), uf.end());
+	bufferUF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	err = queue.enqueueWriteBuffer(bufferUF, CL_TRUE, 0, sizeof(float) * nx * ny * nz, ufF.data());
 
-	bufferUD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferUDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferUD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	bufferUDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
 
-	bufferVF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueWriteBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vf.data());
+	vector<float> vfF(vf.begin(), vf.end());
+	bufferVF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	err = queue.enqueueWriteBuffer(bufferVF, CL_TRUE, 0, sizeof(float) * nx * ny * nz, vfF.data());
 
-	bufferVD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferVDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferVD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	bufferVDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
 
-	bufferAL = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferAC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferAR = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferAL = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	bufferAC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
+	bufferAR = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * nz);
 
-	bufferU10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * nx * ny, u10.data());
+	vector<float> u10F(u10.begin(), u10.end());
+	bufferU10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(float) * nx * ny, u10F.data());
 
-	bufferV10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * nx * ny, v10.data());
+	vector<float> v10F(v10.begin(), v10.end());
+	bufferV10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(float) * nx * ny, v10F.data());
 
-	bufferQX = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * nx * ny, qx.data());
+	vector<float> qxF(qx.begin(), qx.end());
+	bufferQX = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(float) * nx * ny, qxF.data());
 
-	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * nx * ny, qy.data());
+	vector<float> qyF(qy.begin(), qy.end());
+	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny);
+	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(float) * nx * ny, qyF.data());
 
-	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * (nz + 1));
-	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * nx * ny * (nz + 1), nu.data());
+	vector<float> nuF(nu.begin(), nu.end());
+	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * nx * ny * (nz + 1));
+	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(float) * nx * ny * (nz + 1), nuF.data());
 
 	calcUAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_ua");
 
-	calcUAKernel.setArg(0, f);
-	calcUAKernel.setArg(1, kb);
-	calcUAKernel.setArg(2, g);
-	calcUAKernel.setArg(3, rho);
-	calcUAKernel.setArg(4, dx);
+	calcUAKernel.setArg(0, (float)f);
+	calcUAKernel.setArg(1, (float)kb);
+	calcUAKernel.setArg(2, (float)g);
+	calcUAKernel.setArg(3, (float)rho);
+	calcUAKernel.setArg(4, (float)dx);
 	calcUAKernel.setArg(6, nx);
 	calcUAKernel.setArg(7, ny);
 	calcUAKernel.setArg(8, nz);
@@ -133,11 +146,11 @@ Kernel::Kernel(
 
 	calcVAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_va");
 
-	calcVAKernel.setArg(0, f);
-	calcVAKernel.setArg(1, kb);
-	calcVAKernel.setArg(2, g);
-	calcVAKernel.setArg(3, rho);
-	calcVAKernel.setArg(4, dy);
+	calcVAKernel.setArg(0, (float)f);
+	calcVAKernel.setArg(1, (float)kb);
+	calcVAKernel.setArg(2, (float)g);
+	calcVAKernel.setArg(3, (float)rho);
+	calcVAKernel.setArg(4, (float)dy);
 	calcVAKernel.setArg(6, nx);
 	calcVAKernel.setArg(7, ny);
 	calcVAKernel.setArg(8, nz);
@@ -151,11 +164,11 @@ Kernel::Kernel(
 
 	calcRHSKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs");
 
-	calcRHSKernel.setArg(0, f);
-	calcRHSKernel.setArg(1, kb);
-	calcRHSKernel.setArg(2, rho);
-	calcRHSKernel.setArg(3, dx);
-	calcRHSKernel.setArg(4, dy);
+	calcRHSKernel.setArg(0, (float)f);
+	calcRHSKernel.setArg(1, (float)kb);
+	calcRHSKernel.setArg(2, (float)rho);
+	calcRHSKernel.setArg(3, (float)dx);
+	calcRHSKernel.setArg(4, (float)dy);
 	calcRHSKernel.setArg(6, ny);
 	calcRHSKernel.setArg(7, nz);
 	calcRHSKernel.setArg(8, bufferNU);
@@ -172,7 +185,7 @@ Kernel::Kernel(
 
 	createTridiagonalMatrixKernel = cl::Kernel(program, "wind_induced_currents_davies85_create_tridiagonal_matrix");
 
-	createTridiagonalMatrixKernel.setArg(0, kb);
+	createTridiagonalMatrixKernel.setArg(0, (float)kb);
 	createTridiagonalMatrixKernel.setArg(2, ny);
 	createTridiagonalMatrixKernel.setArg(3, nz);
 	createTridiagonalMatrixKernel.setArg(4, bufferNU);
@@ -210,8 +223,8 @@ Kernel::Kernel(
 
 	calcZKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_z");
 
-	calcZKernel.setArg(0, dx);
-	calcZKernel.setArg(1, dy);	
+	calcZKernel.setArg(0, (float)dx);
+	calcZKernel.setArg(1, (float)dy);
 	calcZKernel.setArg(3, nx);
 	calcZKernel.setArg(4, ny);
 	calcZKernel.setArg(5, nz);
@@ -235,13 +248,20 @@ string Kernel::loadKernelSource(path filePath) {
 void Kernel::loadKernelSources(cl::Program::Sources& sources) {
 	sources.push_back(
 		loadKernelSource(
-			"opencl/double_precision/wind_induced_currents/davies85/solver.cl"
+			"opencl/single_precision/wind_induced_currents/davies85/solver.cl"
 		)
 	);
 }
 
+void Kernel::readFloatBuffer(const cl::Buffer& buf, vector<double>& dst, size_t count) {
+	if (scratch.size() < count) scratch.resize(count);
+
+	queue.enqueueReadBuffer(buf, CL_TRUE, 0, sizeof(float) * count, scratch.data());
+	copy(scratch.begin(), scratch.begin() + count, dst.begin());
+}
+
 void Kernel::calcUA(double dt) {
-	calcUAKernel.setArg(5, dt);
+	calcUAKernel.setArg(5, (float)dt);
 	calcUAKernel.setArg(11, bufferUA);
 	calcUAKernel.setArg(12, bufferVA);
 	calcUAKernel.setArg(15, bufferU1A);
@@ -250,7 +270,7 @@ void Kernel::calcUA(double dt) {
 }
 
 void Kernel::calcVA(double dt) {
-	calcVAKernel.setArg(5, dt);
+	calcVAKernel.setArg(5, (float)dt);
 	calcVAKernel.setArg(11, bufferUA);
 	calcVAKernel.setArg(12, bufferVA);
 	calcVAKernel.setArg(15, bufferV1A);
@@ -259,8 +279,8 @@ void Kernel::calcVA(double dt) {
 }
 
 void Kernel::updateUVA() {
-	auto err = queue.enqueueReadBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * nx * ny, ua.data());
-	err = queue.enqueueReadBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * nx * ny, va.data());
+	readFloatBuffer(bufferUA, ua, nx * ny);
+	readFloatBuffer(bufferVA, va, nx * ny);
 }
 
 void Kernel::swapUA() {
@@ -272,18 +292,18 @@ void Kernel::swapVA() {
 }
 
 void Kernel::calcRHS(double dt) {
-	calcRHSKernel.setArg(5, dt);
+	calcRHSKernel.setArg(5, (float)dt);
 	calcRHSKernel.setArg(13, bufferUA);
 	calcRHSKernel.setArg(14, bufferVA);
 
 	auto err = queue.enqueueNDRangeKernel(calcRHSKernel, cl::NullRange, volumeRange, cl::NullRange);
 
-	err = queue.enqueueCopyBuffer(bufferUD, bufferUDT, 0, 0, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueCopyBuffer(bufferVD, bufferVDT, 0, 0, sizeof(double) * nx * ny * nz);
+	err = queue.enqueueCopyBuffer(bufferUD, bufferUDT, 0, 0, sizeof(float) * nx * ny * nz);
+	err = queue.enqueueCopyBuffer(bufferVD, bufferVDT, 0, 0, sizeof(float) * nx * ny * nz);
 }
 
 void Kernel::createTridiagonalMatrix(double dt) {
-	createTridiagonalMatrixKernel.setArg(1, dt);
+	createTridiagonalMatrixKernel.setArg(1, (float)dt);
 
 	auto err = queue.enqueueNDRangeKernel(createTridiagonalMatrixKernel, cl::NullRange, volumeRange, cl::NullRange);
 }
@@ -297,17 +317,17 @@ void Kernel::calcUVF() {
 }
 
 void Kernel::updateUVF() {
-	auto err = queue.enqueueReadBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, uf.data());
-	err = queue.enqueueReadBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vf.data());
+	readFloatBuffer(bufferUF, uf, nx * ny * nz);
+	readFloatBuffer(bufferVF, vf, nx * ny * nz);
 }
 
 void Kernel::updateUVD() {
-	auto err = queue.enqueueReadBuffer(bufferUDT, CL_TRUE, 0, sizeof(double) * nx * ny * nz, ud.data());
-	err = queue.enqueueReadBuffer(bufferVDT, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vd.data());
+	readFloatBuffer(bufferUDT, ud, nx * ny * nz);
+	readFloatBuffer(bufferVDT, vd, nx * ny * nz);
 }
 
 void Kernel::calcZ(double dt) {
-	calcZKernel.setArg(2, dt);
+	calcZKernel.setArg(2, (float)dt);
 	calcZKernel.setArg(7, bufferUA);
 	calcZKernel.setArg(8, bufferVA);
 
@@ -315,20 +335,27 @@ void Kernel::calcZ(double dt) {
 }
 
 void Kernel::updateZ() {
-	auto err = queue.enqueueReadBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * nx * ny, z.data());
+	readFloatBuffer(bufferZ, z, nx * ny);
 }
 
 void Kernel::updateQUV10Device() {
-	auto err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * nx * ny, u10.data());
-	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * nx * ny, v10.data());
+	vector<float> u10F(u10.begin(), u10.end());
+	auto err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(float) * nx * ny, u10F.data());
 
-	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * nx * ny, qx.data());
-	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * nx * ny, qy.data());
+	vector<float> v10F(v10.begin(), v10.end());
+	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(float) * nx * ny, v10F.data());
+
+	vector<float> qxF(qx.begin(), qx.end());
+	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(float) * nx * ny, qxF.data());
+
+	vector<float> qyF(qy.begin(), qy.end());
+	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(float) * nx * ny, qyF.data());
 }
 
 void Kernel::calcNU() {}
 
 void Kernel::updateNU() {}
 
-
-
+path Kernel::addDirectory(path outDir) {
+	return outDir / path("sp");
+}

@@ -1,5 +1,5 @@
-#ifndef PARALLEL_SINGLE_PRECISION_WIND_INDUCED_CURRENTS_DAVIES85_SOLVER_H
-#define PARALLEL_SINGLE_PRECISION_WIND_INDUCED_CURRENTS_DAVIES85_SOLVER_H
+#ifndef PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_SOLVER_H
+#define PARALLEL_WIND_INDUCED_CURRENTS_DAVIES85_SOLVER_H
 
 #include <string>
 
@@ -21,7 +21,7 @@
 
 using namespace std;
 
-namespace Parallel::SinglePrecision::WindInducedCurrents::Davies85 {
+namespace Parallel::WindInducedCurrents::Davies85 {
 	struct Directories {
 		path root;
 		path surface;

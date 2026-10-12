@@ -13,7 +13,7 @@
 
 using namespace std::chrono;
 
-using namespace Parallel::DoublePrecision::WindInducedCurrents::Davies85;
+using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
 	PhysicalParams phys,
