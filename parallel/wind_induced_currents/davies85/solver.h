@@ -25,6 +25,8 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 	private:
 		Data& data;
 
+		bool calcNU;
+
 		double endTime;
 		double outputTimeStep;
 
@@ -65,7 +67,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 
 	public:
 		Solver(
-			Data& data,
+			Data& data, bool calcNU,
 			double endTime, double outputTimeStep, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<IKernel> kernel

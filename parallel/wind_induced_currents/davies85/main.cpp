@@ -8,9 +8,11 @@
 #include <generators/wind/uniform_generator.h>
 #include <generators/viscosity/linear_generator.h>
 
+#include "double_precision/kernel.h"
+#include "data.h"
 #include "solver.h"
 
-using namespace Parallel::WindInducedCurrents::Davies85;
+using namespace Parallel::WindInducedCurrents;
 
 int main() {
 	const double b = 1.1;
@@ -96,24 +98,33 @@ int main() {
 		);
 
 		auto nuGenerator = make_shared<Generators::Viscosity::LinearGenerator>(
-			ht,
-			Calc::Turbulence::ViscosityState{
-				.nut = nut,
-				.nus = num
-			}
+			ht, 
+			Calc::Turbulence::ViscosityState{ .nut = nut, .nus = num }	
 		);
 
-		Solver solver(
+		auto data = Davies85::Data(
+			g, kb, k0, k, sigma, num,
 			PhysicalParams{ .rho = rho, .f = f },
-			g, kb,
-			dx, dy,
-			endTime, outputTimeStep, outDir,
-			timeStep,
+			dx, dy, 
 			areaGenerator,
 			dzGenerator,
 			hGenerator,
 			qGenerator,
 			nuGenerator
+		);
+
+		data.init();
+
+		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
+			data, 
+			"opencl/double_precision/viscosity/default.cl"
+		);
+
+		Davies85::Solver solver(
+			data, false,			
+			endTime, outputTimeStep, outDir,
+			timeStep,
+			kernel
 		);
 
 		solver.solve();

@@ -12,6 +12,7 @@
 #include <generators/dz.h>
 #include <generators/bathymetry.h>
 #include <generators/wind.h>
+#include <generators/viscosity.h>
 
 using namespace std;
 using namespace std::filesystem;
@@ -23,11 +24,13 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		shared_ptr<Generators::DZ::IGenerator> dzGenerator;
 		shared_ptr<Generators::Bathymetry::IGenerator> hGenerator;
 		shared_ptr<Generators::Wind::IGenerator> qGenerator;
+		shared_ptr<Generators::Viscosity::IGenerator> nuGenerator;
 
 	public:
 		size_t nx, ny, nz;
 		double dx, dy;
 		double rho, f, kb, g;
+		double k0, k, sigma, num;
 
 		vector<double> dz;
 		vector<double> h;
@@ -49,13 +52,14 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		vector<Calc::Data::Wind> windData;
 
 		Data(
-			double g, double kb,
+			double g, double kb, double k0, double k, double sigma, double num,
 			Calc::Data::PhysicalParams phys,			
 			double dx, double dy,
 			shared_ptr<Generators::Area::IGenerator> areaGenerator,
 			shared_ptr<Generators::DZ::IGenerator> dzGenerator,
 			shared_ptr<Generators::Bathymetry::IGenerator> hGenerator,
-			shared_ptr<Generators::Wind::IGenerator> qGenerator
+			shared_ptr<Generators::Wind::IGenerator> qGenerator,
+			shared_ptr<Generators::Viscosity::IGenerator> nuGenerator
 		);
 
 		void init();

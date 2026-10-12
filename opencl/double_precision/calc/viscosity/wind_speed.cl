@@ -1,5 +1,3 @@
-#include <opencl/double_precision/calc/turbulence.cl>
-
 inline void calc_viscosity(
 	const double k, const double sigma, const double num,
 	const double u10, const double v10,

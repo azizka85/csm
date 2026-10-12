@@ -3,13 +3,13 @@
 #include <stdexcept>
 
 #include "kernel.h"
+#include "kernel.h"
 
 using namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision;
 
 Kernel::Kernel(
 	Davies85::Data& data,
-	string viscosityKernelSource,
-	string viscosityFuncSource
+	string viscosityKernelSource
 ): data(data)
 {
 	surfaceRange = cl::NDRange(data.nx, data.ny);
@@ -31,7 +31,7 @@ Kernel::Kernel(
 
 	cl::Program::Sources sources;
 
-	loadKernelSources(sources, viscosityKernelSource, viscosityFuncSource);
+	loadKernelSources(sources, viscosityKernelSource);
 
 	cl::Program program(context, sources);
 
@@ -199,6 +199,26 @@ Kernel::Kernel(
 	calcZKernel.setArg(7, bufferUA);
 	calcZKernel.setArg(8, bufferVA);
 	calcZKernel.setArg(9, bufferZ);
+
+	calcNUKernel = cl::Kernel(program, "viscosity");
+
+	calcNUKernel.setArg(0, data.k0);
+	calcNUKernel.setArg(1, data.rho);
+	calcNUKernel.setArg(2, data.f);
+	calcNUKernel.setArg(3, data.k);
+	calcNUKernel.setArg(4, data.sigma);
+	calcNUKernel.setArg(5, data.num);
+	calcNUKernel.setArg(6, data.ny);
+	calcNUKernel.setArg(7, data.nz);
+	calcNUKernel.setArg(8, bufferDZ);
+	calcNUKernel.setArg(9, bufferH);
+	calcNUKernel.setArg(10, bufferU10);
+	calcNUKernel.setArg(11, bufferV10);
+	calcNUKernel.setArg(12, bufferQX);
+	calcNUKernel.setArg(13, bufferQY);
+	calcNUKernel.setArg(14, bufferUA);
+	calcNUKernel.setArg(15, bufferVA);
+	calcNUKernel.setArg(16, bufferNU);
 }
 
 string Kernel::loadKernelSource(path filePath) {
@@ -214,18 +234,11 @@ string Kernel::loadKernelSource(path filePath) {
 
 void Kernel::loadKernelSources(
 	cl::Program::Sources& sources,
-	string viscosityKernelSource,
-	string viscosityFuncSource
+	string viscosityKernelSource
 ) {
 	sources.push_back(
 		loadKernelSource(
 			"opencl/double_precision/wind_induced_currents/davies85/solver.cl"
-		)
-	);
-
-	sources.push_back(
-		loadKernelSource(
-			viscosityFuncSource
 		)
 	);
 
@@ -322,9 +335,20 @@ void Kernel::updateQUV10Device() {
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 }
 
-void Kernel::calcNU() {}
+void Kernel::calcNU() {
+	calcNUKernel.setArg(14, bufferUA);
+	calcNUKernel.setArg(15, bufferVA);
 
-void Kernel::updateNU() {}
+	auto err = queue.enqueueNDRangeKernel(calcNUKernel, cl::NullRange, surfaceRange, cl::NullRange);
+}
+
+double Kernel::calcNUMax() {
+	return 0.0;
+}
+
+void Kernel::updateNU() {
+	auto err = queue.enqueueReadBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * (data.nz + 1), data.nu.data());
+}
 
 path Kernel::addDirectory(path outDir) {
 	return outDir / path("dp");

@@ -1,18 +1,26 @@
+#include <calc/data.h>
+
 #include "data.h"
 
 using namespace Parallel::WindInducedCurrents;
 
 Davies85::Data::Data(
-	double g, double kb,
+	double g, double kb, double k0, double k, double sigma, double num,
 	Calc::Data::PhysicalParams phys,	
 	double dx, double dy,
 	shared_ptr<Generators::Area::IGenerator> areaGenerator,
 	shared_ptr<Generators::DZ::IGenerator> dzGenerator,
 	shared_ptr<Generators::Bathymetry::IGenerator> hGenerator,
-	shared_ptr<Generators::Wind::IGenerator> qGenerator
+	shared_ptr<Generators::Wind::IGenerator> qGenerator,
+	shared_ptr<Generators::Viscosity::IGenerator> nuGenerator
 ) {
 	this->g = g;
 	this->kb = kb;
+	this->k0 = k0;
+	this->k = k;
+	this->sigma = sigma;
+
+	this->num = num;
 
 	rho = phys.rho;
 	f = phys.f;
@@ -24,6 +32,7 @@ Davies85::Data::Data(
 	this->dzGenerator = dzGenerator;
 	this->hGenerator = hGenerator;
 	this->qGenerator = qGenerator;
+	this->nuGenerator = nuGenerator;
 }
 
 void Davies85::Data::init() {
@@ -54,11 +63,31 @@ void Davies85::Data::init() {
 	ud = vector<double>(nx * ny * nz);
 	vd = vector<double>(nx * ny * nz);
 
-	nu = vector<double>(nx * ny * (nz + 1));
-
 	currentWindIndex = 0;
 
 	windData = qGenerator->generate(nx, ny);
+
+	nu = nuGenerator->generate(
+		Calc::Data::VolumeState{
+			.nx = nx, .ny = ny, .nz = nz + 1,
+			.dx = dx, .dy = dy,
+			.dz = dz, .h = h
+		},
+		Calc::Data::WindCurrentData{
+			.speed = Calc::Data::WindSpeedData {
+				.u10 = windData[currentWindIndex].speed.u10,
+				.v10 = windData[currentWindIndex].speed.v10
+			},
+			.stress = Calc::Data::WindStressData {
+				.qx = windData[currentWindIndex].stress.qx,
+				.qy = windData[currentWindIndex].stress.qy
+			},
+			.current = Calc::Data::Current {
+				.ua = ua,
+				.va = va
+			}
+		}
+	);
 }
 
 path Davies85::Data::addDirectory(path outDir) {

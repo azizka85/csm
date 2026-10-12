@@ -567,7 +567,9 @@ void Solver::writeData(
 				.vx = currentWindData.stress.qx,
 				.vy = currentWindData.stress.qy
 			},
-			z
+			Scalar{
+				.v = z
+			}			
 		},
 		dirs.surface
 	);
@@ -594,7 +596,9 @@ void Solver::writeData(
 			Column {.name = "nu", .precision = 3 }
 		},
 		vector<Writers::Volume::DataKind>{
-			nu
+			Scalar{
+				.v = nu
+			}
 		},
 		dirs.viscosity
 	);
@@ -725,7 +729,7 @@ void Solver::solve() {
 		SurfaceState{ .nx = nx, .ny = ny, .dx = dx, .dy = dy }, {
 			Column { .name = "h", .precision = 3 }
 		}, {
-			h
+			Scalar{ .v = h }
 		},
 		dirs.root
 	);

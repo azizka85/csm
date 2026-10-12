@@ -8,7 +8,6 @@
 #include <utils/viscosity.h>
 #include <utils/data.h>
 
-#include "kernel.h"
 #include "solver.h"
 
 using namespace std::chrono;
@@ -16,11 +15,13 @@ using namespace std::chrono;
 using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
-	Data& data,
+	Data& data, bool calcNU,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
 ): data(data) {
+	this->calcNU = calcNU;
+
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
 	this->outDir = outDir;
@@ -34,6 +35,7 @@ Directories Solver::createDirectory() {
 		format("{}/f={}, g={}, rho={}, kb={}", outDir, data.f, data.g, data.rho, data.kb)
 	);
 
+	dirPath = kernel->addDirectory(dirPath);
 	dirPath = data.addDirectory(dirPath);
 
 	create_directories(dirPath);
@@ -174,8 +176,6 @@ void Solver::solve() {
 	vector<double> v(data.nx * data.ny * data.nz);
 	vector<double> w(data.nx * data.ny * data.nz);
 
-	vector<double> nu(data.nx * data.ny * (data.nz + 1)); // TODO: nu???
-
 	setInitialCondition(
 		data.nx, data.ny, data.nz,
 		data.uf, data.vf,
@@ -189,7 +189,7 @@ void Solver::solve() {
 	vector<double> &qx = data.windData[data.currentWindIndex].stress.qx;
 	vector<double> &qy = data.windData[data.currentWindIndex].stress.qy;
 
-	double nuMax = 0.4; // TODO: Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+	double nuMax = Utils::Viscosity::maxNU(data.nu, data.nx, data.ny, data.nz + 1);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 	double dtp = dt;
@@ -254,7 +254,7 @@ void Solver::solve() {
 		dirs,
 		data.uf, data.ua, u,
 		data.vf, data.va, v,
-		w, nu,
+		w, data.nu,
 		surfaceWriter,
 		volumeElemWriter,
 		volumeNodeWriter
@@ -282,7 +282,7 @@ void Solver::solve() {
 		t += dt;
 		n += 1;
 
-		if (currentWindIndex < data.windData.size() - 1 && t >= data.windData[data.currentWindIndex + 1].time) {
+		if (data.currentWindIndex < data.windData.size() - 1 && t >= data.windData[data.currentWindIndex + 1].time) {
 			data.currentWindIndex += 1;
 
 			u10 = data.windData[data.currentWindIndex].speed.u10;
@@ -296,9 +296,10 @@ void Solver::solve() {
 			updateDT = true;
 		}
 
-		kernel->calcNU();
-
-		// TODO: nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+		if (calcNU) {
+			kernel->calcNU();
+			nuMax = kernel->calcNUMax();
+		}
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
@@ -338,7 +339,10 @@ void Solver::solve() {
 			kernel->updateUVF();
 			kernel->updateUVD();
 			kernel->updateZ();
-			kernel->updateNU();
+
+			if (calcNU) {
+				kernel->updateNU();
+			}
 
 			writeData(
 				TimeState{ .m = m, .t = t },
@@ -361,7 +365,7 @@ void Solver::solve() {
 				dirs,
 				data.uf, data.ua, u,
 				data.vf, data.va, v,
-				w, nu,
+				w, data.nu,
 				surfaceWriter,
 				volumeElemWriter,
 				volumeNodeWriter

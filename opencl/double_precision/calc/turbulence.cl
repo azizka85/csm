@@ -6,5 +6,5 @@ inline void calc_turbulence_frictional_influence(
 	double q = sqrt(qx * qx + qy * qy);
 
 	*ut = sqrt(q / rho);
-	*ht = k0 * ut / f;
+	*ht = k0 * (*ut) / f;
 }

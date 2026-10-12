@@ -62,18 +62,18 @@ namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision {
 
 		cl::Kernel calcZKernel;
 
+		cl::Kernel calcNUKernel;
+
 		string loadKernelSource(path filePath);
 		void loadKernelSources(
 			cl::Program::Sources& sources,
-			string viscosityKernelSource,
-			string viscosityFuncSource
+			string viscosityKernelSource
 		);
 
 	public:
 		Kernel(
 			Davies85::Data& data,
-			string viscosityKernelSource,
-			string viscosityFuncSource
+			string viscosityKernelSource
 		);
 
 		void calcUA(double dt) override;
@@ -97,6 +97,7 @@ namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision {
 		void updateQUV10Device() override;
 
 		void calcNU() override;
+		double calcNUMax() override;
 		void updateNU() override;
 		
 		path addDirectory(path outDir) override;

@@ -27,7 +27,7 @@ path Writer::write(TimeState time, VolumeState volume, const vector<Column> &col
 		if (holds_alternative<VolumeVector>(data[i])) {
 			writeVolumeVector(columns[i].name, columns[i].precision, volume, get<VolumeVector>(data[i]), file);
 		}
-		else if (holds_alternative<vector<double>>(data[i])) {
+		else if (holds_alternative<Scalar>(data[i])) {
 			writeVolumeScalar(columns[i].name, columns[i].precision, volume, get<Scalar>(data[i]), file);
 		}
 	}

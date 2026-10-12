@@ -5,42 +5,19 @@
 
 #include <vector>
 
+#include "../data.h"
 #include "../kernel.h"
 
 using namespace std;
 using namespace std::filesystem;
 
 namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
-	class Kernel: IKernel {
+	class Kernel: public IKernel {
 	private:
 		cl::NDRange surfaceRange;
 		cl::NDRange volumeRange;
 
-		int nx, ny, nz;
-		double dx, dy;
-		double rho, f, kb, g;
-
-		vector<double>& dz;
-		vector<double>& h;
-
-		vector<double>& ua;
-		vector<double>& va;
-
-		vector<double>& z;
-
-		vector<double>& uf;
-		vector<double>& vf;
-
-		vector<double>& ud;
-		vector<double>& vd;
-
-		vector<double>& u10;
-		vector<double>& v10;
-
-		vector<double>& qx;
-		vector<double>& qy;
-
-		vector<double>& nu;
+		Davies85::Data& data;
 
 		cl::Buffer bufferDZ;
 		cl::Buffer bufferH;
@@ -85,26 +62,19 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 
 		cl::Kernel calcZKernel;
 
+		cl::Kernel calcNUKernel;
+
 		vector<float> scratch;
 
 		string loadKernelSource(path filePath);
-		void loadKernelSources(cl::Program::Sources& sources);
+		void loadKernelSources(cl::Program::Sources& sources, string viscosityKernelSource);
 
 		void readFloatBuffer(const cl::Buffer& buf, vector<double>& dst, size_t count);
 
 	public:
 		Kernel(
-			int nx, int ny,
-			double dx, double dy,
-			double rho, double f, double kb, double g,
-			vector<double>& dz, vector<double>& h,
-			vector<double>& ua, vector<double>& va,
-			vector<double>& z,
-			vector<double>& uf, vector<double>& vf,
-			vector<double>& ud, vector<double>& vd,
-			vector<double>& u10, vector<double>& v10,
-			vector<double>& qx, vector<double>& qy,
-			vector<double>& nu
+			Davies85::Data& data,
+			string viscosityKernelSource
 		);
 
 		void calcUA(double dt) override;
@@ -128,9 +98,10 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		void updateQUV10Device() override;
 
 		void calcNU() override;
+		double calcNUMax() override;
 		void updateNU() override;
 
-		path addDirectory(path outDir) override;
+		path addDirectory(path outDir) override;		
 };
 }
 

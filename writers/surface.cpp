@@ -67,7 +67,7 @@ path Writer::write(
 		if (holds_alternative<SurfaceVector>(data[i])) {
 			writeSurfaceVector(columns[i].name, columns[i].precision, surface, get<SurfaceVector>(data[i]), file);
 		}
-		else if (holds_alternative<vector<double>>(data[i])) {
+		else if (holds_alternative<Scalar>(data[i])) {
 			writeSurfaceScalar(columns[i].name, columns[i].precision, surface, get<Scalar>(data[i]), file);
 		}
 	}

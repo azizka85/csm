@@ -29,6 +29,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		virtual void updateQUV10Device() = 0;
 
 		virtual void calcNU() = 0;
+		virtual double calcNUMax() = 0;
 		virtual void updateNU() = 0;
 
 		virtual path addDirectory(path outDir) = 0;
