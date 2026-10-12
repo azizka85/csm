@@ -12,12 +12,12 @@ Writer::Writer(string fileName, WriteSurfaceDataHeaderFn writeSurfaceDataHeader)
 	this->writeSurfaceDataHeader = writeSurfaceDataHeader;
 }
 
-void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState surface, SurfaceVector vector, ofstream &file) {
+void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState& surface, const SurfaceVector& vector, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
-	auto vx = vector.vx;
-	auto vy = vector.vy;
+	auto& vx = vector.vx;
+	auto& vy = vector.vy;
 
 	file << format("VECTORS {} double", name) << endl;
 
@@ -30,7 +30,7 @@ void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState surf
 	}
 }
 
-void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState surface, const vector<double> &data, ofstream &file) {
+void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState& surface, const Scalar &data, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
@@ -41,7 +41,7 @@ void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState surf
 		for (int i = 0; i < nx; i++) {
 			int p = j + i * ny;
 
-			file << format("{:.{}f}", data[p], precision) << endl;
+			file << format("{:.{}f}", data.v[p], precision) << endl;
 		}
 	}
 }
@@ -68,7 +68,7 @@ path Writer::write(
 			writeSurfaceVector(columns[i].name, columns[i].precision, surface, get<SurfaceVector>(data[i]), file);
 		}
 		else if (holds_alternative<vector<double>>(data[i])) {
-			writeSurfaceScalar(columns[i].name, columns[i].precision, surface, get<vector<double>>(data[i]), file);
+			writeSurfaceScalar(columns[i].name, columns[i].precision, surface, get<Scalar>(data[i]), file);
 		}
 	}
 

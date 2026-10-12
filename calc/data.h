@@ -40,6 +40,10 @@ namespace Calc::Data {
 		vector<double> &vy;
 	};
 
+	struct Scalar {
+		vector<double>& v;
+	};
+
 	struct VolumeState {
 		size_t nx;
 		size_t ny;

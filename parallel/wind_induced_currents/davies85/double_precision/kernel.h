@@ -5,6 +5,7 @@
 
 #include <vector>
 
+#include "../data.h"
 #include "../kernel.h"
 
 using namespace std;
@@ -16,31 +17,7 @@ namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision {
 		cl::NDRange surfaceRange;
 		cl::NDRange volumeRange;
 
-		int nx, ny, nz;
-		double dx, dy;
-		double rho, f, kb, g;
-
-		vector<double>& dz;
-		vector<double>& h;
-
-		vector<double>& ua;
-		vector<double>& va;
-
-		vector<double>& z;
-
-		vector<double>& uf;
-		vector<double>& vf;
-
-		vector<double>& ud;
-		vector<double>& vd;
-
-		vector<double>& u10;
-		vector<double>& v10;
-
-		vector<double>& qx;
-		vector<double>& qy;
-
-		vector<double>& nu;
+		Davies85::Data& data;		
 
 		cl::Buffer bufferDZ;
 		cl::Buffer bufferH;
@@ -86,21 +63,17 @@ namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision {
 		cl::Kernel calcZKernel;
 
 		string loadKernelSource(path filePath);
-		void loadKernelSources(cl::Program::Sources& sources);
+		void loadKernelSources(
+			cl::Program::Sources& sources,
+			string viscosityKernelSource,
+			string viscosityFuncSource
+		);
 
 	public:
 		Kernel(
-			int nx, int ny,
-			double dx, double dy,
-			double rho, double f, double kb, double g,
-			vector<double>& dz, vector<double>& h,
-			vector<double>& ua, vector<double>& va,
-			vector<double>& z,
-			vector<double>& uf, vector<double>& vf,
-			vector<double>& ud, vector<double>& vd,
-			vector<double>& u10, vector<double>& v10,
-			vector<double>& qx, vector<double>& qy,
-			vector<double>& nu
+			Davies85::Data& data,
+			string viscosityKernelSource,
+			string viscosityFuncSource
 		);
 
 		void calcUA(double dt) override;

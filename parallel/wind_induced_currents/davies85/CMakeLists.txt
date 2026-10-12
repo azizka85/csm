@@ -10,6 +10,7 @@ find_package(OpenCL CONFIG REQUIRED)
 add_executable(parallel_wind_induced_currents_davies_85 
     main.cpp
     solver.cpp
+    data.cpp
     double_precision/kernel.cpp
     single_precision/kernel.cpp
 )

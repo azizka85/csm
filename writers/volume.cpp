@@ -28,14 +28,14 @@ path Writer::write(TimeState time, VolumeState volume, const vector<Column> &col
 			writeVolumeVector(columns[i].name, columns[i].precision, volume, get<VolumeVector>(data[i]), file);
 		}
 		else if (holds_alternative<vector<double>>(data[i])) {
-			writeVolumeScalar(columns[i].name, columns[i].precision, volume, get<vector<double>>(data[i]), file);
+			writeVolumeScalar(columns[i].name, columns[i].precision, volume, get<Scalar>(data[i]), file);
 		}
 	}
 
 	return filePath;
 }
 
-void Writer::writeVolumeVector(string name, size_t precision, VolumeState volume, VolumeVector vector, ofstream &file) {
+void Writer::writeVolumeVector(string name, size_t precision, VolumeState& volume, const VolumeVector& vector, ofstream &file) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;
@@ -58,7 +58,7 @@ void Writer::writeVolumeVector(string name, size_t precision, VolumeState volume
 	}
 }
 
-void Writer::writeVolumeScalar(string name, size_t precision, VolumeState volume, const vector<double> &data, ofstream &file) {
+void Writer::writeVolumeScalar(string name, size_t precision, VolumeState& volume, const Scalar &data, ofstream &file) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;
@@ -72,7 +72,7 @@ void Writer::writeVolumeScalar(string name, size_t precision, VolumeState volume
 				int p = j + i * ny;
 				int id = k + p * nz;
 
-				file << format("{:.{}f}", data[id], precision) << endl;
+				file << format("{:.{}f}", data.v[id], precision) << endl;
 			}
 		}
 	}

@@ -16,65 +16,25 @@ using namespace std::chrono;
 using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
-	PhysicalParams phys,
-	double g, double kb,
-	double dx, double dy,
+	Data& data,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
-	shared_ptr<Generators::Area::IGenerator> areaGenerator,
-	shared_ptr<Generators::DZ::IGenerator> dzGenerator,
-	shared_ptr<Generators::Bathymetry::IGenerator> hGenerator,
-	shared_ptr<Generators::Wind::IGenerator> qGenerator,
-	shared_ptr<Generators::Viscosity::IGenerator> nuGenerator
-) {
-	this->phys = phys;
-
-	this->g = g;
-	this->kb = kb;
-
-	this->dx = dx;
-	this->dy = dy;
-
+	shared_ptr<IKernel> kernel
+): data(data) {
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
 	this->outDir = outDir;
 
-	this->timeStep = timeStep;
-	this->areaGenerator = areaGenerator;
-	this->dzGenerator = dzGenerator;
-	this->hGenerator = hGenerator;
-	this->qGenerator = qGenerator;
-	this->nuGenerator = nuGenerator;
+	this->timeStep = timeStep;	
+	this->kernel = kernel;
 }
 
 Directories Solver::createDirectory() {
 	auto dirPath = path(
-		format("{}/f={}, g={}, rho={}, kb={}", outDir, phys.f, g, phys.rho, kb)
+		format("{}/f={}, g={}, rho={}, kb={}", outDir, data.f, data.g, data.rho, data.kb)
 	);
 
-	create_directories(dirPath);
-
-	dirPath = hGenerator->addDirectory(dirPath);
-
-	create_directories(dirPath);
-
-	dirPath = nuGenerator->addDirectory(dirPath);
-
-	create_directories(dirPath);
-
-	dirPath = qGenerator->addDirectory(dirPath);
-
-	create_directories(dirPath);
-
-	dirPath = areaGenerator->addDirectory(dirPath);
-
-	create_directories(dirPath);
-
-	dirPath = dirPath / format("dx={}, dy={}", dx, dy);
-
-	create_directories(dirPath);
-
-	dirPath = dzGenerator->addDirectory(dirPath);
+	dirPath = data.addDirectory(dirPath);
 
 	create_directories(dirPath);
 
@@ -152,20 +112,22 @@ void Solver::writeData(
 			Column{ .name = "z", .precision = 7 }
 		},
 		vector<Writers::Surface::DataKind>{
-		SurfaceVector{
-			.vx = currentWindData.current.ua,
-			.vy = currentWindData.current.va
+			SurfaceVector{
+				.vx = currentWindData.current.ua,
+				.vy = currentWindData.current.va
+			},
+			SurfaceVector{
+				.vx = currentWindData.speed.u10,
+				.vy = currentWindData.speed.v10,
+			},
+			SurfaceVector{
+				.vx = currentWindData.stress.qx,
+				.vy = currentWindData.stress.qy
+			},
+			Scalar{
+				.v = z
+			}
 		},
-		SurfaceVector{
-			.vx = currentWindData.speed.u10,
-			.vy = currentWindData.speed.v10,
-		},
-		SurfaceVector{
-			.vx = currentWindData.stress.qx,
-			.vy = currentWindData.stress.qy
-		},
-		z
-	},
 		dirs.surface
 	);
 
@@ -176,11 +138,11 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = volume.nx, .ny = volume.ny, .nz = volume.nz, .dx = volume.dx, .dy = volume.dy, .dz = volume.dz, .h = volume.h },
 		vector<Column>{
-		Column{ .name = "v", .precision = 3 }
-	},
+			Column{ .name = "v", .precision = 3 }
+		},
 		vector<Writers::Volume::DataKind>{
-		VolumeVector{ .vx = u, .vy = v, .vz = w }
-	},
+			VolumeVector{ .vx = u, .vy = v, .vz = w }
+		},
 		dirs.volume
 	);
 
@@ -188,105 +150,56 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = volume.nx, .ny = volume.ny, .nz = volume.nz + 1, .dx = volume.dx, .dy = volume.dy, .dz = volume.dz, .h = volume.h },
 		vector<Column>{
-		Column{ .name = "nu", .precision = 3 }
-	},
+			Column{ .name = "nu", .precision = 3 }
+		},
 		vector<Writers::Volume::DataKind>{
-		nu
-	},
+			Scalar{
+				.v = nu
+			}
+		},
 		dirs.viscosity
 	);
 }
 
 void Solver::solve() {
-	auto dirs = createDirectory();
+	auto dirs = createDirectory();	
 
-	auto geo = areaGenerator->generate();
+	auto [hMin, hMax] = Utils::Bathymetry::minMaxH(data.h, data.nx, data.ny);
 
-	size_t nx = static_cast<int>(
-		ceil(geo.l / dx)
-		) + 1;
+	double dzMin = *min_element(data.dz.begin(), data.dz.end());
 
-	size_t ny = static_cast<int>(
-		ceil(geo.w / dy)
-		) + 1;
+	const double dtMax = min(data.dx, data.dy) / sqrt(2 * data.g * hMax) / 1.5;	
 
-	auto dz = dzGenerator->generate();
+	vector<double> u(data.nx * data.ny * data.nz);
+	vector<double> v(data.nx * data.ny * data.nz);
+	vector<double> w(data.nx * data.ny * data.nz);
 
-	size_t nz = dz.size();
-
-	auto h = hGenerator->generate(nx, ny);
-
-	auto [hMin, hMax] = Utils::Bathymetry::minMaxH(h, nx, ny);
-
-	double dzMin = *min_element(dz.begin(), dz.end());
-
-	const double dtMax = min(dx, dy) / sqrt(2 * g * hMax) / 1.5;
-
-	vector<double> ua(nx * ny);
-	vector<double> va(nx * ny);
-
-	vector<double> z(nx * ny);
-
-	vector<double> uf(nx * ny * nz);
-	vector<double> vf(nx * ny * nz);
-
-	vector<double> ud(nx * ny * nz);
-	vector<double> vd(nx * ny * nz);
-
-	vector<double> u(nx * ny * nz);
-	vector<double> v(nx * ny * nz);
-	vector<double> w(nx * ny * nz);
+	vector<double> nu(data.nx * data.ny * (data.nz + 1)); // TODO: nu???
 
 	setInitialCondition(
-		nx, ny, nz,
-		uf, vf,
-		ua, va,
-		z
+		data.nx, data.ny, data.nz,
+		data.uf, data.vf,
+		data.ua, data.va,
+		data.z
 	);
 
-	auto windData = qGenerator->generate(nx, ny);
+	vector<double> &u10 = data.windData[data.currentWindIndex].speed.u10;
+	vector<double> &v10 = data.windData[data.currentWindIndex].speed.v10;
 
-	size_t currentWindIndex = 0;
+	vector<double> &qx = data.windData[data.currentWindIndex].stress.qx;
+	vector<double> &qy = data.windData[data.currentWindIndex].stress.qy;
 
-	vector<double> &u10 = windData[currentWindIndex].speed.u10;
-	vector<double> &v10 = windData[currentWindIndex].speed.v10;
-
-	vector<double> &qx = windData[currentWindIndex].stress.qx;
-	vector<double> &qy = windData[currentWindIndex].stress.qy;
-
-	auto nu = nuGenerator->generate(
-		VolumeState{
-			.nx = nx, .ny = ny, .nz = nz + 1,
-			.dx = dx, .dy = dy,
-			.dz = dz, .h = h
-		},
-		WindCurrentData{
-			.speed = WindSpeedData {
-				.u10 = u10,
-				.v10 = v10
-			},
-			.stress = WindStressData {
-				.qx = qx,
-				.qy = qy
-			},
-			.current = Current {
-				.ua = ua,
-				.va = va
-			}
-		}
-	);
-
-	double nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+	double nuMax = 0.4; // TODO: Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 	double dtp = dt;
 
 	bool updateDT = false;
 
-	auto zp = z;
+	auto zp = data.z;
 
-	auto up = uf;
-	auto vp = vf;
+	auto up = data.uf;
+	auto vp = data.vf;
 
 	double t = 0;
 	double tn = outputTimeStep;
@@ -306,15 +219,19 @@ void Solver::solve() {
 
 	heightWriter.write(
 		TimeState{ .m = m, .t = t },
-		SurfaceState{ .nx = nx, .ny = ny, .dx = dx, .dy = dy }, {
+		SurfaceState{ .nx = data.nx, .ny = data.ny, .dx = data.dx, .dy = data.dy }, 
+		{
 			Column {.name = "h", .precision = 3 }
-		}, {
-			h
+		}, 
+		{
+			Scalar {
+				.v = data.h
+			}
 		},
 		dirs.root
 	);
 
-	VolumeState volume = { .nx = nx, .ny = ny, .nz = nz, .dx = dx, .dy = dy, .dz = dz, .h = h };
+	VolumeState volume = { .nx = data.nx, .ny = data.ny, .nz = data.nz, .dx = data.dx, .dy = data.dy, .dz = data.dz, .h = data.h };
 
 	writeData(
 		TimeState{ .m = m, .t = t },
@@ -329,31 +246,18 @@ void Solver::solve() {
 				.qy = qy
 			},
 			.current = Current {
-				.ua = ua,
-				.va = va
+				.ua = data.ua,
+				.va = data.va
 			}
 		},
-		z,
+		data.z,
 		dirs,
-		uf, ua, u,
-		vf, va, v,
+		data.uf, data.ua, u,
+		data.vf, data.va, v,
 		w, nu,
 		surfaceWriter,
 		volumeElemWriter,
 		volumeNodeWriter
-	);
-
-	Kernel kernel(
-		nx, ny,
-		dx, dy,
-		phys.rho, phys.f, kb, g,
-		dz, h,
-		ua, va, z,
-		uf, vf,
-		ud, vd,
-		u10, v10,
-		qx, qy,
-		nu
 	);
 
 	long long calcTime = 0;
@@ -363,36 +267,36 @@ void Solver::solve() {
 	m += 1;
 
 	while (t <= endTime) {
-		kernel.calcUA(dt);
-		kernel.swapUA();
+		kernel->calcUA(dt);
+		kernel->swapUA();
 
-		kernel.calcVA(dt);
-		kernel.swapVA();
+		kernel->calcVA(dt);
+		kernel->swapVA();
 
-		kernel.calcRHS(dt);
-		kernel.createTridiagonalMatrix(dt);
-		kernel.calcUVF();
+		kernel->calcRHS(dt);
+		kernel->createTridiagonalMatrix(dt);
+		kernel->calcUVF();
 
-		kernel.calcZ(dt);
+		kernel->calcZ(dt);
 
 		t += dt;
 		n += 1;
 
-		if (currentWindIndex < windData.size() - 1 && t >= windData[currentWindIndex + 1].time) {
-			currentWindIndex += 1;
+		if (currentWindIndex < data.windData.size() - 1 && t >= data.windData[data.currentWindIndex + 1].time) {
+			data.currentWindIndex += 1;
 
-			u10 = windData[currentWindIndex].speed.u10;
-			v10 = windData[currentWindIndex].speed.v10;
+			u10 = data.windData[data.currentWindIndex].speed.u10;
+			v10 = data.windData[data.currentWindIndex].speed.v10;
 
-			qx = windData[currentWindIndex].stress.qx;
-			qy = windData[currentWindIndex].stress.qy;
+			qx = data.windData[data.currentWindIndex].stress.qx;
+			qy = data.windData[data.currentWindIndex].stress.qy;
 
-			kernel.updateQUV10Device();
+			kernel->updateQUV10Device();
 
 			updateDT = true;
 		}
 
-		kernel.calcNU();
+		kernel->calcNU();
 
 		// TODO: nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
 
@@ -428,13 +332,13 @@ void Solver::solve() {
 
 			calcTime += duration;
 
-			kernel.calcResidual();
+			kernel->calcResidual();
 
-			kernel.updateUVA();
-			kernel.updateUVF();
-			kernel.updateUVD();
-			kernel.updateZ();
-			kernel.updateNU();			
+			kernel->updateUVA();
+			kernel->updateUVF();
+			kernel->updateUVD();
+			kernel->updateZ();
+			kernel->updateNU();
 
 			writeData(
 				TimeState{ .m = m, .t = t },
@@ -449,27 +353,27 @@ void Solver::solve() {
 						.qy = qy
 					},
 					.current = Current {
-						.ua = ua,
-						.va = va
+						.ua = data.ua,
+						.va = data.va
 					}
 				},
-				z,
+				data.z,
 				dirs,
-				uf, ua, u,
-				vf, va, v,
+				data.uf, data.ua, u,
+				data.vf, data.va, v,
 				w, nu,
 				surfaceWriter,
 				volumeElemWriter,
 				volumeNodeWriter
 			);
 
-			auto umd = Utils::Data::maxAbsDifference(nx, ny, nz, up, uf);
-			auto vmd = Utils::Data::maxAbsDifference(nx, ny, nz, vp, vf);
-			auto zmd = Utils::Data::maxAbsDifference(nx, ny, zp, z);
+			auto umd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, up, data.uf);
+			auto vmd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, vp, data.vf);
+			auto zmd = Utils::Data::maxAbsDifference(data.nx, data.ny, zp, data.z);
 
 			auto maxRes = max(
-				Utils::Data::maxAbsElem(nx, ny, nz, ud),
-				Utils::Data::maxAbsElem(nx, ny, nz, vd)
+				Utils::Data::maxAbsElem(data.nx, data.ny, data.nz, data.ud),
+				Utils::Data::maxAbsElem(data.nx, data.ny, data.nz, data.vd)
 			);
 
 			cout << format(
@@ -479,10 +383,10 @@ void Solver::solve() {
 
 			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd, zmd });
 
-			up = uf;
-			vp = vf;
+			up = data.uf;
+			vp = data.vf;
 			
-			zp = z;
+			zp = data.z;
 
 			m += 1;
 			tn = t + outputTimeStep;

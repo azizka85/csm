@@ -24,7 +24,7 @@ namespace Writers::Volume {
 
 	using DataKind = variant<
 		VolumeVector,
-		vector<double>
+		Scalar
 	>;
 
 	class Writer {
@@ -43,8 +43,8 @@ namespace Writers::Volume {
 				path outDir
 			);
 
-			void writeVolumeVector(string name, size_t precision, VolumeState volume, VolumeVector vector, ofstream &file);
-			void writeVolumeScalar(string name, size_t precision, VolumeState volume, const vector<double> &data, ofstream &file);
+			void writeVolumeVector(string name, size_t precision, VolumeState& volume, const VolumeVector& vector, ofstream &file);
+			void writeVolumeScalar(string name, size_t precision, VolumeState& volume, const Scalar& data, ofstream &file);
 	};	
 }
 

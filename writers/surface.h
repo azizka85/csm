@@ -24,7 +24,7 @@ namespace Writers::Surface {
 
 	using DataKind = variant<
 		SurfaceVector,
-		vector<double>
+		Scalar
 	>;
 
 	class Writer {
@@ -43,8 +43,8 @@ namespace Writers::Surface {
 				path outDir
 			);
 
-			void writeSurfaceVector(string name, size_t precision, SurfaceState surface, SurfaceVector vector, ofstream &file);
-			void writeSurfaceScalar(string name, size_t precision, SurfaceState surface, const vector<double> &data, ofstream &file);
+			void writeSurfaceVector(string name, size_t precision, SurfaceState &surface, const SurfaceVector &vector, ofstream &file);
+			void writeSurfaceScalar(string name, size_t precision, SurfaceState &surface, const Scalar &data, ofstream &file);
 	};
 }
 

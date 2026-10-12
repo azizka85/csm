@@ -3,38 +3,17 @@
 #include <stdexcept>
 
 #include "kernel.h"
-#include "kernel.h"
 
 using namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision;
 
 Kernel::Kernel(
-	int nx, int ny,
-	double dx, double dy,
-	double rho, double f, double kb, double g,
-	vector<double>& dz, vector<double>& h,
-	vector<double>& ua, vector<double>& va,
-	vector<double>& z,
-	vector<double>& uf, vector<double>& vf,
-	vector<double>& ud, vector<double>& vd,
-	vector<double>& u10, vector<double>& v10,
-	vector<double>& qx, vector<double>& qy,
-	vector<double>& nu
-): nx(nx), ny(ny),
-	dx(dx), dy(dy),
-	rho(rho), f(f), kb(kb), g(g),
-	dz(dz), h(h),
-	ua(ua), va(va),
-	z(z),
-	uf(uf), vf(vf),
-	ud(ud), vd(vd),
-	u10(u10), v10(v10),
-	qx(qx), qy(qy),
-	nu(nu) 
+	Davies85::Data& data,
+	string viscosityKernelSource,
+	string viscosityFuncSource
+): data(data)
 {
-	nz = dz.size();
-
-	surfaceRange = cl::NDRange(nx, ny);
-	volumeRange = cl::NDRange(nx, ny, nz);
+	surfaceRange = cl::NDRange(data.nx, data.ny);
+	volumeRange = cl::NDRange(data.nx, data.ny, data.nz);
 
 	vector<cl::Platform> platforms;
 
@@ -52,7 +31,7 @@ Kernel::Kernel(
 
 	cl::Program::Sources sources;
 
-	loadKernelSources(sources);
+	loadKernelSources(sources, viscosityKernelSource, viscosityFuncSource);
 
 	cl::Program program(context, sources);
 
@@ -64,66 +43,66 @@ Kernel::Kernel(
 		bool ok = true;
 	}
 
-	bufferDZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nz);
-	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(double) * nz, dz.data());
+	bufferDZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nz);
+	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(double) * data.nz, data.dz.data());
 
-	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(double) * nx * ny, h.data());
+	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.h.data());
 
-	bufferUA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * nx * ny, ua.data());
+	bufferUA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.ua.data());
 
-	bufferU1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
+	bufferU1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 
-	bufferVA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * nx * ny, va.data());
+	bufferVA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.va.data());
 
-	bufferV1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
+	bufferV1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 
-	bufferZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * nx * ny, z.data());
+	bufferZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.z.data());
 
-	bufferUF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueWriteBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, uf.data());
+	bufferUF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	err = queue.enqueueWriteBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.uf.data());
 
-	bufferUD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferUDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferUD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	bufferUDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
 
-	bufferVF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueWriteBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vf.data());
+	bufferVF = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	err = queue.enqueueWriteBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.vf.data());
 
-	bufferVD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferVDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferVD = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	bufferVDT = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
 
-	bufferAL = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferAC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
-	bufferAR = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * nz);
+	bufferAL = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	bufferAC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
+	bufferAR = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * data.nz);
 
-	bufferU10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * nx * ny, u10.data());
+	bufferU10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.u10.data());
 
-	bufferV10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * nx * ny, v10.data());
+	bufferV10 = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.v10.data());
 
-	bufferQX = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * nx * ny, qx.data());
+	bufferQX = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qx.data());
 
-	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny);
-	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * nx * ny, qy.data());
+	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 
-	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * nx * ny * (nz + 1));
-	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * nx * ny * (nz + 1), nu.data());
+	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * (data.nz + 1));
+	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * (data.nz + 1), data.nu.data());
 
 	calcUAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_ua");
 
-	calcUAKernel.setArg(0, f);
-	calcUAKernel.setArg(1, kb);
-	calcUAKernel.setArg(2, g);
-	calcUAKernel.setArg(3, rho);
-	calcUAKernel.setArg(4, dx);
-	calcUAKernel.setArg(6, nx);
-	calcUAKernel.setArg(7, ny);
-	calcUAKernel.setArg(8, nz);
+	calcUAKernel.setArg(0, data.f);
+	calcUAKernel.setArg(1, data.kb);
+	calcUAKernel.setArg(2, data.g);
+	calcUAKernel.setArg(3, data.rho);
+	calcUAKernel.setArg(4, data.dx);
+	calcUAKernel.setArg(6, data.nx);
+	calcUAKernel.setArg(7, data.ny);
+	calcUAKernel.setArg(8, data.nz);
 	calcUAKernel.setArg(9, bufferH);
 	calcUAKernel.setArg(10, bufferQX);
 	calcUAKernel.setArg(11, bufferUA);
@@ -134,14 +113,14 @@ Kernel::Kernel(
 
 	calcVAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_va");
 
-	calcVAKernel.setArg(0, f);
-	calcVAKernel.setArg(1, kb);
-	calcVAKernel.setArg(2, g);
-	calcVAKernel.setArg(3, rho);
-	calcVAKernel.setArg(4, dy);
-	calcVAKernel.setArg(6, nx);
-	calcVAKernel.setArg(7, ny);
-	calcVAKernel.setArg(8, nz);
+	calcVAKernel.setArg(0, data.f);
+	calcVAKernel.setArg(1, data.kb);
+	calcVAKernel.setArg(2, data.g);
+	calcVAKernel.setArg(3, data.rho);
+	calcVAKernel.setArg(4, data.dy);
+	calcVAKernel.setArg(6, data.nx);
+	calcVAKernel.setArg(7, data.ny);
+	calcVAKernel.setArg(8, data.nz);
 	calcVAKernel.setArg(9, bufferH);
 	calcVAKernel.setArg(10, bufferQY);
 	calcVAKernel.setArg(11, bufferUA);
@@ -152,13 +131,13 @@ Kernel::Kernel(
 
 	calcRHSKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs");
 
-	calcRHSKernel.setArg(0, f);
-	calcRHSKernel.setArg(1, kb);
-	calcRHSKernel.setArg(2, rho);
-	calcRHSKernel.setArg(3, dx);
-	calcRHSKernel.setArg(4, dy);
-	calcRHSKernel.setArg(6, ny);
-	calcRHSKernel.setArg(7, nz);
+	calcRHSKernel.setArg(0, data.f);
+	calcRHSKernel.setArg(1, data.kb);
+	calcRHSKernel.setArg(2, data.rho);
+	calcRHSKernel.setArg(3, data.dx);
+	calcRHSKernel.setArg(4, data.dy);
+	calcRHSKernel.setArg(6, data.ny);
+	calcRHSKernel.setArg(7, data.nz);
 	calcRHSKernel.setArg(8, bufferNU);
 	calcRHSKernel.setArg(9, bufferDZ);
 	calcRHSKernel.setArg(10, bufferH);
@@ -173,9 +152,9 @@ Kernel::Kernel(
 
 	createTridiagonalMatrixKernel = cl::Kernel(program, "wind_induced_currents_davies85_create_tridiagonal_matrix");
 
-	createTridiagonalMatrixKernel.setArg(0, kb);
-	createTridiagonalMatrixKernel.setArg(2, ny);
-	createTridiagonalMatrixKernel.setArg(3, nz);
+	createTridiagonalMatrixKernel.setArg(0, data.kb);
+	createTridiagonalMatrixKernel.setArg(2, data.ny);
+	createTridiagonalMatrixKernel.setArg(3, data.nz);
 	createTridiagonalMatrixKernel.setArg(4, bufferNU);
 	createTridiagonalMatrixKernel.setArg(5, bufferDZ);
 	createTridiagonalMatrixKernel.setArg(6, bufferH);
@@ -185,8 +164,8 @@ Kernel::Kernel(
 
 	calcUVFKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_uvf");
 
-	calcUVFKernel.setArg(0, ny);
-	calcUVFKernel.setArg(1, nz);
+	calcUVFKernel.setArg(0, data.ny);
+	calcUVFKernel.setArg(1, data.nz);
 	calcUVFKernel.setArg(2, bufferH);
 	calcUVFKernel.setArg(3, bufferAL);
 	calcUVFKernel.setArg(4, bufferAC);
@@ -198,8 +177,8 @@ Kernel::Kernel(
 
 	calcResidualKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_residual");
 
-	calcResidualKernel.setArg(0, ny);
-	calcResidualKernel.setArg(1, nz);
+	calcResidualKernel.setArg(0, data.ny);
+	calcResidualKernel.setArg(1, data.nz);
 	calcResidualKernel.setArg(2, bufferH);
 	calcResidualKernel.setArg(3, bufferAL);
 	calcResidualKernel.setArg(4, bufferAC);
@@ -211,11 +190,11 @@ Kernel::Kernel(
 
 	calcZKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_z");
 
-	calcZKernel.setArg(0, dx);
-	calcZKernel.setArg(1, dy);	
-	calcZKernel.setArg(3, nx);
-	calcZKernel.setArg(4, ny);
-	calcZKernel.setArg(5, nz);
+	calcZKernel.setArg(0, data.dx);
+	calcZKernel.setArg(1, data.dy);
+	calcZKernel.setArg(3, data.nx);
+	calcZKernel.setArg(4, data.ny);
+	calcZKernel.setArg(5, data.nz);
 	calcZKernel.setArg(6, bufferH);
 	calcZKernel.setArg(7, bufferUA);
 	calcZKernel.setArg(8, bufferVA);
@@ -233,10 +212,26 @@ string Kernel::loadKernelSource(path filePath) {
 	);
 }
 
-void Kernel::loadKernelSources(cl::Program::Sources& sources) {
+void Kernel::loadKernelSources(
+	cl::Program::Sources& sources,
+	string viscosityKernelSource,
+	string viscosityFuncSource
+) {
 	sources.push_back(
 		loadKernelSource(
 			"opencl/double_precision/wind_induced_currents/davies85/solver.cl"
+		)
+	);
+
+	sources.push_back(
+		loadKernelSource(
+			viscosityFuncSource
+		)
+	);
+
+	sources.push_back(
+		loadKernelSource(
+			viscosityKernelSource
 		)
 	);
 }
@@ -260,8 +255,8 @@ void Kernel::calcVA(double dt) {
 }
 
 void Kernel::updateUVA() {
-	auto err = queue.enqueueReadBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * nx * ny, ua.data());
-	err = queue.enqueueReadBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * nx * ny, va.data());
+	auto err = queue.enqueueReadBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.ua.data());
+	err = queue.enqueueReadBuffer(bufferVA, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.va.data());
 }
 
 void Kernel::swapUA() {
@@ -279,8 +274,8 @@ void Kernel::calcRHS(double dt) {
 
 	auto err = queue.enqueueNDRangeKernel(calcRHSKernel, cl::NullRange, volumeRange, cl::NullRange);
 
-	err = queue.enqueueCopyBuffer(bufferUD, bufferUDT, 0, 0, sizeof(double) * nx * ny * nz);
-	err = queue.enqueueCopyBuffer(bufferVD, bufferVDT, 0, 0, sizeof(double) * nx * ny * nz);
+	err = queue.enqueueCopyBuffer(bufferUD, bufferUDT, 0, 0, sizeof(double) * data.nx * data.ny * data.nz);
+	err = queue.enqueueCopyBuffer(bufferVD, bufferVDT, 0, 0, sizeof(double) * data.nx * data.ny * data.nz);
 }
 
 void Kernel::createTridiagonalMatrix(double dt) {
@@ -298,13 +293,13 @@ void Kernel::calcUVF() {
 }
 
 void Kernel::updateUVF() {
-	auto err = queue.enqueueReadBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, uf.data());
-	err = queue.enqueueReadBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vf.data());
+	auto err = queue.enqueueReadBuffer(bufferUF, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.uf.data());
+	err = queue.enqueueReadBuffer(bufferVF, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.vf.data());
 }
 
 void Kernel::updateUVD() {
-	auto err = queue.enqueueReadBuffer(bufferUDT, CL_TRUE, 0, sizeof(double) * nx * ny * nz, ud.data());
-	err = queue.enqueueReadBuffer(bufferVDT, CL_TRUE, 0, sizeof(double) * nx * ny * nz, vd.data());
+	auto err = queue.enqueueReadBuffer(bufferUDT, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.ud.data());
+	err = queue.enqueueReadBuffer(bufferVDT, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * data.nz, data.vd.data());
 }
 
 void Kernel::calcZ(double dt) {
@@ -316,15 +311,15 @@ void Kernel::calcZ(double dt) {
 }
 
 void Kernel::updateZ() {
-	auto err = queue.enqueueReadBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * nx * ny, z.data());
+	auto err = queue.enqueueReadBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.z.data());
 }
 
 void Kernel::updateQUV10Device() {
-	auto err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * nx * ny, u10.data());
-	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * nx * ny, v10.data());
+	auto err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.u10.data());
+	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.v10.data());
 
-	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * nx * ny, qx.data());
-	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * nx * ny, qy.data());
+	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qx.data());
+	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 }
 
 void Kernel::calcNU() {}
