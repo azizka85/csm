@@ -21,7 +21,7 @@ using namespace WindInducedCurrents::Davies85;
 Solver::Solver(	
 	PhysicalParams phys,
 	double g, double kb,
-	double dx, double dy,
+	double dx, double dy, bool calcNU,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<Generators::Area::IGenerator> areaGenerator,
@@ -37,6 +37,8 @@ Solver::Solver(
 
 	this->dx = dx;
 	this->dy = dy;
+
+	this->calcNU = calcNU;
 
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
@@ -845,29 +847,31 @@ void Solver::solve() {
 			updateDT = true;
 		}
 
-		nu = nuGenerator->generate(
-			VolumeState{
-				.nx = nx, .ny = ny, .nz = nz + 1,
-				.dx = dx, .dy = dy,
-				.dz = dz, .h = h
-			},
-			WindCurrentData{
-				.speed = WindSpeedData {
-					.u10 = u10,
-					.v10 = v10
+		if (calcNU) {
+			nu = nuGenerator->generate(
+				VolumeState{
+					.nx = nx, .ny = ny, .nz = nz + 1,
+					.dx = dx, .dy = dy,
+					.dz = dz, .h = h
 				},
-				.stress = WindStressData {
-					.qx = qx,
-					.qy = qy
-				},
-				.current = Current {
-					.ua = ua,
-					.va = va
+				WindCurrentData{
+					.speed = WindSpeedData {
+						.u10 = u10,
+						.v10 = v10
+					},
+					.stress = WindStressData {
+						.qx = qx,
+						.qy = qy
+					},
+					.current = Current {
+						.ua = ua,
+						.va = va
+					}
 				}
-			}
-		);
+			);
 
-		nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+			nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+		}
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 

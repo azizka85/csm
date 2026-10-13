@@ -1,5 +1,3 @@
-#include <opencl/single_precision/slae/direct/tridiagonal.cl>
-
 __kernel void wind_induced_currents_davies85_calc_ua(
     float f, float kb, float g, float rho,
     float dx, float dt,

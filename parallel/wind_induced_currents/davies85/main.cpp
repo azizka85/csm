@@ -8,7 +8,7 @@
 #include <generators/wind/uniform_generator.h>
 #include <generators/viscosity/linear_generator.h>
 
-#include "double_precision/kernel.h"
+#include "single_precision/kernel.h"
 #include "data.h"
 #include "solver.h"
 
@@ -115,9 +115,29 @@ int main() {
 
 		data.init();
 
-		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
+		vector<string> baseSources = {
+			"opencl/single_precision/utils/max.cl",
+			"opencl/single_precision/slae/direct/tridiagonal.cl",
+			"opencl/single_precision/wind_induced_currents/davies85/solver.cl",
+		};
+
+		vector<string> defaultViscositySources = {
+			"opencl/single_precision/viscosity/default.cl"
+		};
+
+		vector<string> windSpeedViscositySources = {
+			"opencl/single_precision/calc/turbulence.cl",
+			"opencl/single_precision/calc/viscosity/wind_speed.cl",
+			"opencl/single_precision/viscosity/wind_speed.cl"
+		};
+
+		auto sources = baseSources;
+
+		sources.insert(sources.end(), defaultViscositySources.begin(), defaultViscositySources.end());
+
+		auto kernel = make_shared<Davies85::SinglePrecision::Kernel>(
 			data, 
-			"opencl/double_precision/viscosity/default.cl"
+			sources
 		);
 
 		Davies85::Solver solver(

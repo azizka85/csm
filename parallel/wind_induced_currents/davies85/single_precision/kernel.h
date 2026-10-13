@@ -78,14 +78,17 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		vector<float> scratch;
 
 		string loadKernelSource(path filePath);
-		void loadKernelSources(cl::Program::Sources& sources, string viscosityKernelSource);
+		void loadKernelSources(cl::Program::Sources& sources, vector<string>& sourcePaths);
 
 		void readFloatBuffer(const cl::Buffer& buf, vector<double>& dst, size_t count);
+
+		void printDeviceDescription(cl::Platform& platform, cl::Device& device);
 
 	public:
 		Kernel(
 			Davies85::Data& data,
-			string viscosityKernelSource
+			vector<string>& sourcePaths,
+			size_t platformIdx = 0, size_t deviceIdx = 0
 		);
 
 		void calcUA(double dt) override;

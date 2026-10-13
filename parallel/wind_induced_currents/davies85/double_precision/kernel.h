@@ -78,13 +78,16 @@ namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision {
 		string loadKernelSource(path filePath);
 		void loadKernelSources(
 			cl::Program::Sources& sources,
-			string viscosityKernelSource
+			vector<string>& sourcePaths
 		);
+
+		void printDeviceDescription(cl::Platform& platform, cl::Device& device);
 
 	public:
 		Kernel(
 			Davies85::Data& data,
-			string viscosityKernelSource
+			vector<string>& sourcePaths,
+			size_t platformIdx = 0, size_t deviceIdx = 0
 		);
 
 		void calcUA(double dt) override;

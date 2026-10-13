@@ -1,5 +1,3 @@
-#include <opencl/double_precision/slae/direct/tridiagonal.cl>
-
 __kernel void wind_induced_currents_davies85_calc_ua(
     double f, double kb, double g, double rho,
     double dx, double dt,

@@ -106,7 +106,7 @@ int main() {
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},
 			g, kb, 
-			dx, dy,
+			dx, dy, true,
 			endTime, outputTimeStep, outDir,
 			timeStep, 
 			areaGenerator,

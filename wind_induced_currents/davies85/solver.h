@@ -38,6 +38,8 @@ namespace WindInducedCurrents::Davies85 {
 		
 		double dx;
 		double dy;
+
+		bool calcNU;
 		
 		double endTime;
 		double outputTimeStep;
@@ -176,7 +178,7 @@ namespace WindInducedCurrents::Davies85 {
 		Solver(
 			PhysicalParams phys,
 			double g, double kb,
-			double dx, double dy,
+			double dx, double dy, bool calcNU,
 			double endTime, double outputTimeStep, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<Generators::Area::IGenerator> areaGenerator,

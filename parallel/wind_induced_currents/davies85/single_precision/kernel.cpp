@@ -1,16 +1,16 @@
+#include <iostream>
 #include <fstream>
 
 #include <stdexcept>
 
-#include "kernel.h"
-#include "kernel.h"
 #include "kernel.h"
 
 using namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision;
 
 Kernel::Kernel(
 	Davies85::Data& data,
-	string viscosityKernelSource
+	vector<string>& sourcePaths,
+	size_t platformIdx, size_t deviceIdx
 ): data(data)
 {
 	surfaceRange = cl::NDRange(data.nx, data.ny);
@@ -23,19 +23,23 @@ Kernel::Kernel(
 
 	cl::Platform::get(&platforms);
 
-	cl::Platform platform = platforms.front();
+	cl::Platform platform = platforms[platformIdx];
 
 	vector<cl::Device> devices;
 
 	platform.getDevices(CL_DEVICE_TYPE_GPU, &devices);
 
-	cl::Device device = devices.front();
+	cl::Device device = devices[deviceIdx];
+
+	printDeviceDescription(platform, device);
+
 	cl::Context context(device);
+
 	queue = cl::CommandQueue(context, device);
 
 	cl::Program::Sources sources;
 
-	loadKernelSources(sources, viscosityKernelSource);
+	loadKernelSources(sources, sourcePaths);
 
 	cl::Program program(context, sources);
 
@@ -271,24 +275,14 @@ string Kernel::loadKernelSource(path filePath) {
 	);
 }
 
-void Kernel::loadKernelSources(cl::Program::Sources& sources, string viscosityKernelSource) {
-	sources.push_back(
-		loadKernelSource(
-			"opencl/single_precision/wind_induced_currents/davies85/solver.cl"
-		)
-	);
-
-	sources.push_back(
-		loadKernelSource(
-			"opencl/single_precision/utils/max.cl"
-		)
-	);
-
-	sources.push_back(
-		loadKernelSource(
-			viscosityKernelSource
-		)
-	);
+void Kernel::loadKernelSources(cl::Program::Sources& sources, vector<string>& sourcePaths) {
+	for (auto& path : sourcePaths) {
+		sources.push_back(
+			loadKernelSource(
+				path
+			)
+		);
+	}
 }
 
 void Kernel::readFloatBuffer(const cl::Buffer& buf, vector<double>& dst, size_t count) {
@@ -296,6 +290,17 @@ void Kernel::readFloatBuffer(const cl::Buffer& buf, vector<double>& dst, size_t 
 
 	queue.enqueueReadBuffer(buf, CL_TRUE, 0, sizeof(float) * count, scratch.data());
 	copy(scratch.begin(), scratch.begin() + count, dst.begin());
+}
+
+void Kernel::printDeviceDescription(cl::Platform& platform, cl::Device& device) {
+	cout << "Platform: " << platform.getInfo<CL_PLATFORM_VERSION>() << endl;
+	cout << "    Device: " << device.getInfo<CL_DEVICE_NAME>() << endl;
+	cout << "    Vendor: " << device.getInfo<CL_DEVICE_VENDOR>() << endl;
+	cout << "    Compute Units: " << device.getInfo<CL_DEVICE_MAX_COMPUTE_UNITS>() << endl;
+	cout << "    Clock Frequency: " << device.getInfo<CL_DEVICE_MAX_CLOCK_FREQUENCY>() << " MHz" << endl;
+	cout << "    Global Memory: " << device.getInfo<CL_DEVICE_GLOBAL_MEM_SIZE>() / (1024 * 1024) << " MB" << endl;
+	cout << "    Local Memory: " << device.getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() / 1024 << " KB" << endl;
+	cout << "    Max Work Group Size: " << device.getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>() << endl;
 }
 
 void Kernel::calcUA(double dt) {

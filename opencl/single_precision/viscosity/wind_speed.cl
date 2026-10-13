@@ -1,6 +1,3 @@
-#include <opencl/single_precision/calc/turbulence.cl>
-#include <opencl/single_precision/calc/viscosity/wind_speed.cl>
-
 __kernel void viscosity(
 	const float k0, const  float rho, const float f,
 	const float k, const float sigma, const float num,
