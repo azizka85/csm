@@ -98,6 +98,35 @@ Kernel::Kernel(
 	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 
+	bufferU10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
+
+	bufferV10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
+
+	bufferQXC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
+
+	bufferQYC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);	
+
+	bufferU10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	bufferV10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	bufferQXN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+	bufferQYN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+
+	if (data.currentWindIndex + 1 < data.windData.size()) {		
+		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.u10.data());		
+		err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.v10.data());		
+		err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qx.data());		
+		err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qy.data());
+	} else {		
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10N, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10N, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXN, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYN, 0, 0, sizeof(double) * data.nx * data.ny);
+	}
+
 	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * (data.nz + 1));
 	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(double) * data.nx * data.ny * (data.nz + 1), data.nu.data());
 
@@ -231,6 +260,10 @@ Kernel::Kernel(
 	calcNUKernel.setArg(14, bufferUA);
 	calcNUKernel.setArg(15, bufferVA);
 	calcNUKernel.setArg(16, bufferNU);
+
+	interpolateQUV10Kernel = cl::Kernel(program, "utils_interpolate_plane");
+
+	interpolateQUV10Kernel.setArg(0, (int)data.ny);
 
 	calcMaxPlaneKernel = cl::Kernel(program, "utils_max_plane");
 
@@ -371,6 +404,57 @@ void Kernel::updateQUV10Device() {
 
 	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qx.data());
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
+
+	if (data.currentWindIndex + 1 < data.windData.size()) {
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
+
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);
+		
+		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.u10.data());
+		err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.v10.data());
+
+		err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qx.data());
+		err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qy.data());
+	}	
+}
+
+void Kernel::interpolateQUV10(double alpha) {
+	interpolateQUV10Kernel.setArg(1, alpha);
+	interpolateQUV10Kernel.setArg(2, bufferU10);
+	interpolateQUV10Kernel.setArg(3, bufferU10C);
+	interpolateQUV10Kernel.setArg(4, bufferU10N);
+
+	auto err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferV10);
+	interpolateQUV10Kernel.setArg(3, bufferV10C);
+	interpolateQUV10Kernel.setArg(4, bufferV10N);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferQX);
+	interpolateQUV10Kernel.setArg(3, bufferQXC);
+	interpolateQUV10Kernel.setArg(4, bufferQXN);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferQY);
+	interpolateQUV10Kernel.setArg(3, bufferQYC);
+	interpolateQUV10Kernel.setArg(4, bufferQYN);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+}
+
+void Kernel::updateQUV10(
+	vector<double>& u10, vector<double>& v10,
+	vector<double>& qx, vector<double>& qy
+) {
+	auto err = queue.enqueueReadBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, u10.data());
+	err = queue.enqueueReadBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, v10.data());
+	err = queue.enqueueReadBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, qx.data());
+	err = queue.enqueueReadBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, qy.data());
 }
 
 void Kernel::calcNU() {

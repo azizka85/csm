@@ -15,12 +15,14 @@ using namespace std::chrono;
 using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
-	Data& data, bool calcNU,
+	Data& data, 
+	bool calcNU, bool interpolateWind,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
 ): data(data) {
 	this->calcNU = calcNU;
+	this->interpolateWind = interpolateWind;
 
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
@@ -183,11 +185,11 @@ void Solver::solve() {
 		data.z
 	);
 
-	vector<double> &u10 = data.windData[data.currentWindIndex].speed.u10;
-	vector<double> &v10 = data.windData[data.currentWindIndex].speed.v10;
+	vector<double> u10 = data.windData[data.currentWindIndex].speed.u10;
+	vector<double> v10 = data.windData[data.currentWindIndex].speed.v10;
 
-	vector<double> &qx = data.windData[data.currentWindIndex].stress.qx;
-	vector<double> &qy = data.windData[data.currentWindIndex].stress.qy;
+	vector<double> qx = data.windData[data.currentWindIndex].stress.qx;
+	vector<double> qy = data.windData[data.currentWindIndex].stress.qy;
 
 	double nuMax = Utils::Viscosity::maxNU(data.nu, data.nx, data.ny, data.nz + 1);
 
@@ -203,6 +205,13 @@ void Solver::solve() {
 
 	double t = 0;
 	double tn = outputTimeStep;
+
+	double t0 = data.windData[data.currentWindIndex].time;
+	double t1 = data.windData[data.currentWindIndex].time;
+
+	if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {
+		t1 = data.windData[data.currentWindIndex + 1].time;		
+	}
 
 	size_t n = 1;
 	size_t m = 0;
@@ -282,18 +291,23 @@ void Solver::solve() {
 		t += dt;
 		n += 1;
 
-		if (data.currentWindIndex < data.windData.size() - 1 && t >= data.windData[data.currentWindIndex + 1].time) {
+		if (data.currentWindIndex + 1 < data.windData.size() && t >= data.windData[data.currentWindIndex + 1].time) {
 			data.currentWindIndex += 1;
-
-			u10 = data.windData[data.currentWindIndex].speed.u10;
-			v10 = data.windData[data.currentWindIndex].speed.v10;
-
-			qx = data.windData[data.currentWindIndex].stress.qx;
-			qy = data.windData[data.currentWindIndex].stress.qy;
 
 			kernel->updateQUV10Device();
 
+			if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {				
+				t0 = data.windData[data.currentWindIndex].time;
+				t1 = data.windData[data.currentWindIndex + 1].time;
+			}
+
 			updateDT = true;
+		}
+
+		if (interpolateWind) {
+			double alpha = (t1 == t0) ? 0 : (t - t0) / (t1 - t0);
+
+			kernel->interpolateQUV10(alpha);
 		}
 
 		if (calcNU) {
@@ -342,6 +356,10 @@ void Solver::solve() {
 
 			if (calcNU) {
 				kernel->updateNU();
+			}
+
+			if (interpolateWind) {
+				kernel->updateQUV10(u10, v10, qx, qy);
 			}
 
 			writeData(

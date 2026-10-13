@@ -109,6 +109,43 @@ Kernel::Kernel(
 	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qyF.data());
 
+	bufferU10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(float) * data.nx * data.ny);
+
+	bufferV10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(float) * data.nx * data.ny);
+
+	bufferQXC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(float) * data.nx * data.ny);
+
+	bufferQYC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(float) * data.nx * data.ny);
+
+	bufferU10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	bufferV10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	bufferQXN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	bufferQYN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+
+	if (data.currentWindIndex + 1 < data.windData.size()) {
+		vector<float> u10NF(data.windData[data.currentWindIndex + 1].speed.u10.begin(), data.windData[data.currentWindIndex + 1].speed.u10.end());		
+		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, u10NF.data());
+
+		vector<float> v10NF(data.windData[data.currentWindIndex + 1].speed.v10.begin(), data.windData[data.currentWindIndex + 1].speed.v10.end());		
+		err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, v10NF.data());
+
+		vector<float> qxNF(data.windData[data.currentWindIndex + 1].stress.qx.begin(), data.windData[data.currentWindIndex + 1].stress.qx.end());		
+		err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qxNF.data());
+
+		vector<float> qyNF(data.windData[data.currentWindIndex + 1].stress.qy.begin(), data.windData[data.currentWindIndex + 1].stress.qy.end());		
+		err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qyNF.data());
+	}
+	else {		
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10N, 0, 0, sizeof(float) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10N, 0, 0, sizeof(float) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXN, 0, 0, sizeof(float) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYN, 0, 0, sizeof(float) * data.nx * data.ny);
+	}
+
 	vector<float> nuF(data.nu.begin(), data.nu.end());
 	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny * (data.nz + 1));
 	err = queue.enqueueWriteBuffer(bufferNU, CL_TRUE, 0, sizeof(float) * data.nx * data.ny * (data.nz + 1), nuF.data());
@@ -243,6 +280,10 @@ Kernel::Kernel(
 	calcNUKernel.setArg(14, bufferUA);
 	calcNUKernel.setArg(15, bufferVA);
 	calcNUKernel.setArg(16, bufferNU);
+
+	interpolateQUV10Kernel = cl::Kernel(program, "utils_interpolate_plane");
+
+	interpolateQUV10Kernel.setArg(0, (int)data.ny);
 
 	calcMaxPlaneKernel = cl::Kernel(program, "utils_max_plane");
 
@@ -393,6 +434,63 @@ void Kernel::updateQUV10Device() {
 
 	vector<float> qyF(data.windData[data.currentWindIndex].stress.qy.begin(), data.windData[data.currentWindIndex].stress.qy.end());
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qyF.data());
+
+	if (data.currentWindIndex + 1 < data.windData.size()) {
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
+
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);
+
+		vector<float> u10NF(data.windData[data.currentWindIndex + 1].speed.u10.begin(), data.windData[data.currentWindIndex + 1].speed.u10.end());
+		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, u10NF.data());
+
+		vector<float> v10NF(data.windData[data.currentWindIndex + 1].speed.v10.begin(), data.windData[data.currentWindIndex + 1].speed.v10.end());
+		err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, v10NF.data());
+
+		vector<float> qxNF(data.windData[data.currentWindIndex + 1].stress.qx.begin(), data.windData[data.currentWindIndex + 1].stress.qx.end());
+		err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qxNF.data());
+
+		vector<float> qyNF(data.windData[data.currentWindIndex + 1].stress.qy.begin(), data.windData[data.currentWindIndex + 1].stress.qy.end());
+		err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qyNF.data());
+	}
+}
+
+void Kernel::interpolateQUV10(double alpha) {
+	interpolateQUV10Kernel.setArg(1, (float)alpha);
+	interpolateQUV10Kernel.setArg(2, bufferU10);
+	interpolateQUV10Kernel.setArg(3, bufferU10C);
+	interpolateQUV10Kernel.setArg(4, bufferU10N);
+
+	auto err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferV10);
+	interpolateQUV10Kernel.setArg(3, bufferV10C);
+	interpolateQUV10Kernel.setArg(4, bufferV10N);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferQX);
+	interpolateQUV10Kernel.setArg(3, bufferQXC);
+	interpolateQUV10Kernel.setArg(4, bufferQXN);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+
+	interpolateQUV10Kernel.setArg(2, bufferQY);
+	interpolateQUV10Kernel.setArg(3, bufferQYC);
+	interpolateQUV10Kernel.setArg(4, bufferQYN);
+
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+}
+
+void Kernel::updateQUV10(
+	vector<double>& u10, vector<double>& v10,
+	vector<double>& qx, vector<double>& qy
+) {
+	readFloatBuffer(bufferU10, u10, data.nx * data.ny);
+	readFloatBuffer(bufferV10, v10, data.nx * data.ny);
+	readFloatBuffer(bufferQX, qx, data.nx * data.ny);
+	readFloatBuffer(bufferQY, qy, data.nx * data.ny);
 }
 
 void Kernel::calcNU() {

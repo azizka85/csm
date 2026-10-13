@@ -141,7 +141,8 @@ int main() {
 		);
 
 		Davies85::Solver solver(
-			data, true,			
+			data, 
+			false, false,			
 			endTime, outputTimeStep, outDir,
 			timeStep,
 			kernel

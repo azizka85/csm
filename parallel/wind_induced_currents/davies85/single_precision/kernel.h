@@ -51,6 +51,18 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::Buffer bufferQX;
 		cl::Buffer bufferQY;
 
+		cl::Buffer bufferU10C;
+		cl::Buffer bufferV10C;
+
+		cl::Buffer bufferQXC;
+		cl::Buffer bufferQYC;
+
+		cl::Buffer bufferU10N;
+		cl::Buffer bufferV10N;
+
+		cl::Buffer bufferQXN;
+		cl::Buffer bufferQYN;
+
 		cl::Buffer bufferNU;
 
 		cl::Buffer bufferV;
@@ -70,6 +82,8 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::Kernel calcZKernel;
 
 		cl::Kernel calcNUKernel;
+
+		cl::Kernel interpolateQUV10Kernel;
 
 		cl::Kernel calcMaxPlaneKernel;
 		cl::Kernel calcMaxRowKernel;
@@ -110,6 +124,12 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		void updateZ() override;
 
 		void updateQUV10Device() override;
+		void interpolateQUV10(double alpha) override;
+
+		void updateQUV10(
+			vector<double>& u10, vector<double>& v10,
+			vector<double>& qx, vector<double>& qy
+		) override;
 
 		void calcNU() override;
 		double calcNUMax() override;
