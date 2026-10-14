@@ -3,10 +3,10 @@
 #include <calc/time.h>
 
 #include <generators/area/uniform_generator.h>
-#include <generators/dz/triple_point_generator.h>
-#include <generators/bathymetry/cosine_generator.h>
+#include <generators/dz/uniform_generator.h>
+#include <generators/bathymetry/uniform_generator.h>
 #include <generators/wind/uniform_generator.h>
-#include <generators/viscosity/linear_generator.h>
+#include <generators/viscosity/uniform_generator.h>
 
 #include "solver.h"
 
@@ -15,7 +15,7 @@ using namespace WindInducedCurrents::Davies85;
 int main() {
 	const double b = 1.1;
 
-	const double f = 1.2e-4;
+	const double f = 0.98e-4;
 	const double g = 9.81;
 	const double rho = 1025;
 	const double kb = 0.002;
@@ -78,15 +78,9 @@ int main() {
 		);
 
 		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
-			Generators::DZ::TriplePointGeneratorParams{
-				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
-					Calc::Grid::TriplePointVerticalStepSizeParams{.zm = zm, .dzMin = dzMin, .dzMax = dzMax}
-				)
-			}
-		);
+		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
 
-		auto hGenerator = make_shared<Generators::Bathymetry::CosineGenerator>(hm);
+		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
 		auto qGenerator = make_shared<Generators::Wind::UniformGenerator>(
 			Generators::Wind::UniformGeneratorParams{
@@ -95,18 +89,12 @@ int main() {
 			}
 		);
 
-		auto nuGenerator = make_shared<Generators::Viscosity::LinearGenerator>(
-			ht,
-			Calc::Turbulence::ViscosityState{
-				.nut = nut,
-				.nus = num
-			}
-		);
+		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
 
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},
 			g, kb, 
-			dx, dy, true,
+			dx, dy, false,
 			endTime, outputTimeStep, outDir,
 			timeStep, 
 			areaGenerator,
