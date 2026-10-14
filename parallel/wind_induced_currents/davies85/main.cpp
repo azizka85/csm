@@ -8,7 +8,7 @@
 #include <generators/wind/ecmwf_generator.h>
 #include <generators/viscosity/wind_speed_generator.h>
 
-#include "single_precision/kernel.h"
+#include "double_precision/kernel.h"
 #include "data.h"
 #include "solver.h"
 
@@ -63,7 +63,7 @@ int main() {
 	const double qxm = 1.5;
 	const double qym = 1.5;
 
-	const double endTime = 60000;
+	const double endTime = 90000;
 	const double outputTimeStep = 600;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
@@ -158,19 +158,20 @@ int main() {
 		data.init(symmetrise);
 
 		vector<string> baseSources = {
-			"opencl/single_precision/utils/max.cl",
-			"opencl/single_precision/slae/direct/tridiagonal.cl",
-			"opencl/single_precision/wind_induced_currents/davies85/solver.cl",
+			"opencl/double_precision/utils/max.cl",
+			"opencl/double_precision/utils/interpolate.cl",
+			"opencl/double_precision/slae/direct/tridiagonal.cl",
+			"opencl/double_precision/wind_induced_currents/davies85/solver.cl",
 		};
 
 		vector<string> defaultViscositySources = {
-			"opencl/single_precision/viscosity/default.cl"
+			"opencl/double_precision/viscosity/default.cl"
 		};
 
 		vector<string> windSpeedViscositySources = {
-			"opencl/single_precision/calc/turbulence.cl",
-			"opencl/single_precision/calc/viscosity/wind_speed.cl",
-			"opencl/single_precision/viscosity/wind_speed.cl"
+			"opencl/double_precision/calc/turbulence.cl",
+			"opencl/double_precision/calc/viscosity/wind_speed.cl",
+			"opencl/double_precision/viscosity/wind_speed.cl"
 		};
 
 		auto sources = baseSources;
@@ -180,7 +181,7 @@ int main() {
 		bool calcNU = true;
 		bool interpolateWind = true;
 
-		auto kernel = make_shared<Davies85::SinglePrecision::Kernel>(
+		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
 			data, 
 			sources,
 			interpolateWind

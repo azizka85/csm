@@ -425,28 +425,28 @@ void Kernel::updateQUV10Device(bool interpolateWind) {
 }
 
 void Kernel::interpolateQUV10(double alpha) {
-	interpolateQUV10Kernel.setArg(1, alpha);
-	interpolateQUV10Kernel.setArg(2, bufferU10);
-	interpolateQUV10Kernel.setArg(3, bufferU10C);
-	interpolateQUV10Kernel.setArg(4, bufferU10N);
+	interpolateQUV10Kernel.setArg(1, alpha);	
+	interpolateQUV10Kernel.setArg(2, bufferU10C);
+	interpolateQUV10Kernel.setArg(3, bufferU10N);
+	interpolateQUV10Kernel.setArg(4, bufferU10);
 
 	auto err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
-
-	interpolateQUV10Kernel.setArg(2, bufferV10);
-	interpolateQUV10Kernel.setArg(3, bufferV10C);
-	interpolateQUV10Kernel.setArg(4, bufferV10N);
-
-	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
-
-	interpolateQUV10Kernel.setArg(2, bufferQX);
-	interpolateQUV10Kernel.setArg(3, bufferQXC);
-	interpolateQUV10Kernel.setArg(4, bufferQXN);
+	
+	interpolateQUV10Kernel.setArg(2, bufferV10C);
+	interpolateQUV10Kernel.setArg(3, bufferV10N);
+	interpolateQUV10Kernel.setArg(4, bufferV10);
 
 	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+	
+	interpolateQUV10Kernel.setArg(2, bufferQXC);
+	interpolateQUV10Kernel.setArg(3, bufferQXN);
+	interpolateQUV10Kernel.setArg(4, bufferQX);
 
-	interpolateQUV10Kernel.setArg(2, bufferQY);
-	interpolateQUV10Kernel.setArg(3, bufferQYC);
-	interpolateQUV10Kernel.setArg(4, bufferQYN);
+	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
+	
+	interpolateQUV10Kernel.setArg(2, bufferQYC);
+	interpolateQUV10Kernel.setArg(3, bufferQYN);
+	interpolateQUV10Kernel.setArg(4, bufferQY);
 
 	err = queue.enqueueNDRangeKernel(interpolateQUV10Kernel, cl::NullRange, surfaceRange, cl::NullRange);
 }

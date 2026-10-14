@@ -8,5 +8,5 @@ inline void calc_viscosity(
 
 	float wind_mag_sq = u10 * u10 + v10 * v10;
 
-	*nus = 0.1825e-3 * pow(wind_mag_sq, 1.25) + num;
+	*nus = 0.1825e-3 * pow(wind_mag_sq, 1.25f) + num;
 }
