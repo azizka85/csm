@@ -27,7 +27,7 @@ namespace Generators::Bathymetry {
 			GEBCOGenerator(GEBCOGeneratorParams params);
 
 			path addDirectory(path outDir) override;
-			vector<double> generate(double nx, double ny) override;
+			vector<double> generate(size_t nx, size_t ny) override;
 	};
 }
 

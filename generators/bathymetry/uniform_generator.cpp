@@ -18,6 +18,6 @@ path Bathymetry::UniformGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Bathymetry::UniformGenerator::generate(double nx, double ny) {
+vector<double> Bathymetry::UniformGenerator::generate(size_t nx, size_t ny) {
 	return vector<double>(nx * ny, h);
 }

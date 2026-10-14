@@ -40,6 +40,8 @@ namespace Utils::Data {
         vector<double>& u, vector<double>& us,
         vector<double>& v
     );
+
+    vector<double> symmetrise(int nx, int ny, vector<double> &v);
 }
 
 #endif

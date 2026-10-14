@@ -2,11 +2,11 @@
 
 #include <calc/time.h>
 
-#include <generators/area/uniform_generator.h>
-#include <generators/dz/uniform_generator.h>
-#include <generators/bathymetry/uniform_generator.h>
-#include <generators/wind/uniform_generator.h>
-#include <generators/viscosity/uniform_generator.h>
+#include <generators/area/proj_generator.h>
+#include <generators/dz/triple_point_generator.h>
+#include <generators/bathymetry/gebco_generator.h>
+#include <generators/wind/ecmwf_generator.h>
+#include <generators/viscosity/wind_speed_generator.h>
 
 #include "single_precision/kernel.h"
 #include "data.h"
@@ -38,8 +38,8 @@ int main() {
 	double refDepth = -25;
 	double minDepth = 5;
 
-	const double dx = 13;
-	const double dy = 13;
+	const double dx = 13000;
+	const double dy = 13000;
 
 	const double dzMin = 0.002;
 	const double dzMax = 0.1;
@@ -79,23 +79,72 @@ int main() {
 			}
 		);
 
-		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
+		Calc::Data::GeoBound geoBound{
+				.latMin = latMin,
+				.lonMin = lonMin,
 
-		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
+				.latMax = latMax,
+				.lonMax = lonMax
+		};
 
-		auto qGenerator = make_shared<Generators::Wind::UniformGenerator>(
-			Generators::Wind::UniformGeneratorParams{
-				.speed = Calc::Wind::SpeedVector {.u10 = u10m, .v10 = v10m },
-				.stress = Calc::Wind::StressVector {.qx = qxm, .qy = qym }
+		auto areaGenerator = make_shared<Generators::Area::ProjGenerator>(geoBound);
+		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
+			Generators::DZ::TriplePointGeneratorParams{
+				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
+					Calc::Grid::TriplePointVerticalStepSizeParams {
+						.zm = zm,
+						.dzMin = dzMin,
+						.dzMax = dzMax
+					}
+				)
 			}
 		);
 
-		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
+		auto hGenerator = make_shared<Generators::Bathymetry::GEBCOGenerator>(
+			Generators::Bathymetry::GEBCOGeneratorParams{
+				.bound = geoBound,
+				.refDepth = refDepth,
+				.minDepth = minDepth,
+				.filePath = gebcoFilePath
+			}
+		);
+
+		auto qGenerator = make_shared<Generators::Wind::ECMWFGenerator>(
+			Generators::Wind::ECMWFGeneratorParams{
+				.bound = geoBound,
+				.windStress = make_shared<Calc::Wind::DefaultStress>(
+					Calc::Wind::DefaultStressParams {
+						.rhoAir = rhoAir,
+						.cd = Cd
+					}
+				),
+				.filePath = ecmwfFilePath
+			}
+		);
+
+		PhysicalParams phys{ .rho = rho, .f = f };
+
+		Calc::Turbulence::Params turbulence{
+			.k0 = k0,
+			.k = k,
+			.sigma = sigma,
+			.num = num
+		};
+
+		auto viscosity = make_shared<Calc::Turbulence::DefaultViscosity>(
+			Calc::Turbulence::DefaultViscosityParams{
+				.turbulence = turbulence,
+				.phys = phys
+			}
+		);
+
+		auto nuGenerator = make_shared<Generators::Viscosity::WindSpeedGenerator>(
+			viscosity, viscosity, viscosity, ""
+		);
 
 		auto data = Davies85::Data(
 			g, kb, k0, k, sigma, num,
-			PhysicalParams{ .rho = rho, .f = f },
+			phys,
 			dx, dy, 
 			areaGenerator,
 			dzGenerator,
@@ -104,7 +153,9 @@ int main() {
 			nuGenerator
 		);
 
-		data.init();
+		bool symmetrise = true;
+
+		data.init(symmetrise);
 
 		vector<string> baseSources = {
 			"opencl/single_precision/utils/max.cl",
@@ -124,10 +175,10 @@ int main() {
 
 		auto sources = baseSources;
 
-		sources.insert(sources.end(), defaultViscositySources.begin(), defaultViscositySources.end());
+		sources.insert(sources.end(), windSpeedViscositySources.begin(), windSpeedViscositySources.end());
 
-		bool calcNU = false;
-		bool interpolateWind = false;
+		bool calcNU = true;
+		bool interpolateWind = true;
 
 		auto kernel = make_shared<Davies85::SinglePrecision::Kernel>(
 			data, 

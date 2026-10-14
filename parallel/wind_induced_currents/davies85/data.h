@@ -62,7 +62,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 			shared_ptr<Generators::Viscosity::IGenerator> nuGenerator
 		);
 
-		void init();
+		void init(bool symmetrise);
 
 		path addDirectory(path outDir);
 	};

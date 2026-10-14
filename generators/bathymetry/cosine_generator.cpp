@@ -20,7 +20,7 @@ path CosineGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Generators::Bathymetry::CosineGenerator::generate(double nx, double ny) {
+vector<double> Generators::Bathymetry::CosineGenerator::generate(size_t nx, size_t ny) {
     vector<double> h(nx * ny);
 
     for (int i = 0; i < nx; i++) {

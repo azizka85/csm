@@ -1,5 +1,7 @@
 #include <calc/data.h>
 
+#include <utils/data.h>
+
 #include "data.h"
 
 using namespace Parallel::WindInducedCurrents;
@@ -35,7 +37,7 @@ Davies85::Data::Data(
 	this->nuGenerator = nuGenerator;
 }
 
-void Davies85::Data::init() {
+void Davies85::Data::init(bool symmetrise) {
 	auto geo = areaGenerator->generate();
 
 	nx = static_cast<size_t>(
@@ -48,9 +50,26 @@ void Davies85::Data::init() {
 
 	dz = dzGenerator->generate();
 
-	nz = dz.size();
+	nz = dz.size();		
 
 	h = hGenerator->generate(nx, ny);
+
+	windData = qGenerator->generate(nx, ny);
+
+	if (symmetrise) {
+		h = Utils::Data::symmetrise(nx, ny, h);
+
+		for (auto& wind : windData) {
+			wind.speed.u10 = Utils::Data::symmetrise(nx, ny, wind.speed.u10);
+			wind.speed.v10 = Utils::Data::symmetrise(nx, ny, wind.speed.v10);
+
+			wind.stress.qx = Utils::Data::symmetrise(nx, ny, wind.stress.qx);
+			wind.stress.qy = Utils::Data::symmetrise(nx, ny, wind.stress.qy);
+		}
+
+		nx *= 2;
+		ny *= 2;
+	}
 
 	ua = vector<double>(nx * ny);
 	va = vector<double>(nx * ny);
@@ -64,8 +83,6 @@ void Davies85::Data::init() {
 	vd = vector<double>(nx * ny * nz);
 
 	currentWindIndex = 0;
-
-	windData = qGenerator->generate(nx, ny);
 
 	nu = nuGenerator->generate(
 		Calc::Data::VolumeState{

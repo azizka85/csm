@@ -46,7 +46,7 @@ path GEBCOGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Generators::Bathymetry::GEBCOGenerator::generate(double nx, double ny) {
+vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_t ny) {
 	Checks::Area::checkNumElemNodes(nx, ny);
 
     NcFile bathymetryFile(params.filePath.string(), NcFile::read);

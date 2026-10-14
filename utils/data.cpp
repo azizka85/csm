@@ -98,3 +98,26 @@ void Data::volumePlusSurface(
         }
     }
 }
+
+vector<double> Data::symmetrise(int nx, int ny, vector<double> &v) {
+    vector<double> vt(4 * nx * ny);
+
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            int pu = ny + j + i * ny;
+            int pd = ny - 1 - j + i * ny;
+
+            vt[pu] = v[pd];
+
+            int pl = j + i * ny;
+            
+            int pdr = j + (2*nx - 1 - i) * ny;
+            int pur = ny + j + (2 * nx - 1 - i) * ny;
+
+            vt[pdr] = vt[pl];
+            vt[pur] = vt[pu];
+        }
+    }
+
+    return vt;
+}

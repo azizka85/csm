@@ -12,7 +12,7 @@ namespace Generators::Bathymetry {
 	class IGenerator {
 		public:
 			virtual path addDirectory(path outDir) = 0;
-			virtual vector<double> generate(double nx, double ny) = 0;
+			virtual vector<double> generate(size_t nx, size_t ny) = 0;
 	};
 }
 

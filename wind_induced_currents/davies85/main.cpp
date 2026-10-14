@@ -78,7 +78,7 @@ int main() {
 		);
 
 		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
+		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(2 * dzMin);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
