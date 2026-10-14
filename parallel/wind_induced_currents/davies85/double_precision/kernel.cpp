@@ -10,6 +10,7 @@ using namespace Parallel::WindInducedCurrents::Davies85::DoublePrecision;
 Kernel::Kernel(
 	Davies85::Data& data,
 	vector<string>& sourcePaths,
+	bool interpolateWind,
 	size_t platformIdx, size_t deviceIdx
 ): data(data)
 {
@@ -98,33 +99,36 @@ Kernel::Kernel(
 	bufferQY = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 
-	bufferU10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
+	if (interpolateWind) {
+		bufferU10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
 
-	bufferV10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
+		bufferV10C = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
 
-	bufferQXC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
+		bufferQXC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
 
-	bufferQYC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);	
+		bufferQYC = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);
 
-	bufferU10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	bufferV10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	bufferQXN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	bufferQYN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		bufferU10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		bufferV10N = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		bufferQXN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
+		bufferQYN = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 
-	if (data.currentWindIndex + 1 < data.windData.size()) {		
-		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.u10.data());		
-		err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.v10.data());		
-		err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qx.data());		
-		err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qy.data());
-	} else {		
-		err = queue.enqueueCopyBuffer(bufferU10, bufferU10N, 0, 0, sizeof(double) * data.nx * data.ny);
-		err = queue.enqueueCopyBuffer(bufferV10, bufferV10N, 0, 0, sizeof(double) * data.nx * data.ny);
-		err = queue.enqueueCopyBuffer(bufferQX, bufferQXN, 0, 0, sizeof(double) * data.nx * data.ny);
-		err = queue.enqueueCopyBuffer(bufferQY, bufferQYN, 0, 0, sizeof(double) * data.nx * data.ny);
+		if (data.currentWindIndex + 1 < data.windData.size()) {
+			err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.u10.data());
+			err = queue.enqueueWriteBuffer(bufferV10N, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].speed.v10.data());
+			err = queue.enqueueWriteBuffer(bufferQXN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qx.data());
+			err = queue.enqueueWriteBuffer(bufferQYN, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex + 1].stress.qy.data());
+		}
+		else {
+			err = queue.enqueueCopyBuffer(bufferU10, bufferU10N, 0, 0, sizeof(double) * data.nx * data.ny);
+			err = queue.enqueueCopyBuffer(bufferV10, bufferV10N, 0, 0, sizeof(double) * data.nx * data.ny);
+			err = queue.enqueueCopyBuffer(bufferQX, bufferQXN, 0, 0, sizeof(double) * data.nx * data.ny);
+			err = queue.enqueueCopyBuffer(bufferQY, bufferQYN, 0, 0, sizeof(double) * data.nx * data.ny);
+		}
 	}
 
 	bufferNU = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny * (data.nz + 1));
@@ -398,14 +402,14 @@ void Kernel::updateZ() {
 	auto err = queue.enqueueReadBuffer(bufferZ, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.z.data());
 }
 
-void Kernel::updateQUV10Device() {
+void Kernel::updateQUV10Device(bool interpolateWind) {
 	auto err = queue.enqueueWriteBuffer(bufferU10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.u10.data());
 	err = queue.enqueueWriteBuffer(bufferV10, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].speed.v10.data());
 
 	err = queue.enqueueWriteBuffer(bufferQX, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qx.data());
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.windData[data.currentWindIndex].stress.qy.data());
 
-	if (data.currentWindIndex + 1 < data.windData.size()) {
+	if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {
 		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
 		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
 

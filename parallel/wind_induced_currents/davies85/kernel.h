@@ -26,7 +26,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		virtual void calcZ(double dt) = 0;
 		virtual void updateZ() = 0;
 
-		virtual void updateQUV10Device() = 0;
+		virtual void updateQUV10Device(bool interpolateWind) = 0;
 		virtual void interpolateQUV10(double alpha) = 0;
 		
 		virtual void updateQUV10(

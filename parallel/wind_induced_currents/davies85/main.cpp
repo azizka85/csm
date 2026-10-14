@@ -126,14 +126,18 @@ int main() {
 
 		sources.insert(sources.end(), defaultViscositySources.begin(), defaultViscositySources.end());
 
+		bool calcNU = false;
+		bool interpolateWind = false;
+
 		auto kernel = make_shared<Davies85::SinglePrecision::Kernel>(
 			data, 
-			sources
+			sources,
+			interpolateWind
 		);
 
 		Davies85::Solver solver(
 			data, 
-			false, false,			
+			calcNU, interpolateWind,			
 			endTime, outputTimeStep, outDir,
 			timeStep,
 			kernel

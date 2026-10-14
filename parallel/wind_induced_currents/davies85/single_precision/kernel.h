@@ -102,6 +102,7 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		Kernel(
 			Davies85::Data& data,
 			vector<string>& sourcePaths,
+			bool interpolateWind,
 			size_t platformIdx = 0, size_t deviceIdx = 0
 		);
 
@@ -123,7 +124,7 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		void calcZ(double dt) override;
 		void updateZ() override;
 
-		void updateQUV10Device() override;
+		void updateQUV10Device(bool interpolateWind) override;
 		void interpolateQUV10(double alpha) override;
 
 		void updateQUV10(

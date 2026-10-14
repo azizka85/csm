@@ -294,7 +294,7 @@ void Solver::solve() {
 		if (data.currentWindIndex + 1 < data.windData.size() && t >= data.windData[data.currentWindIndex + 1].time) {
 			data.currentWindIndex += 1;
 
-			kernel->updateQUV10Device();
+			kernel->updateQUV10Device(interpolateWind);
 
 			if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {				
 				t0 = data.windData[data.currentWindIndex].time;
