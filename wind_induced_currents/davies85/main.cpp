@@ -78,7 +78,7 @@ int main() {
 		);
 
 		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(2 * dzMin);
+		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
@@ -91,10 +91,15 @@ int main() {
 
 		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
 
+		bool calcNU = false;
+		bool interpolateWind = false;
+
+		bool symmetrise = false;
+
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},
 			g, kb, 
-			dx, dy, false,
+			dx, dy, symmetrise, calcNU, interpolateWind,
 			endTime, outputTimeStep, outDir,
 			timeStep, 
 			areaGenerator,

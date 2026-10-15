@@ -20,16 +20,29 @@ path CosineGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Generators::Bathymetry::CosineGenerator::generate(size_t nx, size_t ny) {
-    vector<double> h(nx * ny);
+Data::Bathymetry Generators::Bathymetry::CosineGenerator::generate(
+    size_t nx, size_t ny,
+    double dx, double dy
+) {
+    Data::Bathymetry bathymetry{
+        .h = vector<double>(nx * ny),
+        .x = vector<double>(nx * ny),
+        .y = vector<double>(nx * ny)
+    };
 
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int id = j + i * ny;
+    for (size_t i = 0; i < nx; i++) {
+        for (size_t j = 0; j < ny; j++) {
+            size_t id = j + i * ny;
 
-            h[id] = hm * (1 - 0.98 * cos(2 * M_PI * (i / (nx - 1.) + j / (ny - 1.)))) / 2;
+            double x = dx * i;
+            double y = dy * j;
+
+            bathymetry.h[id] = hm * (1 - 0.98 * cos(2 * M_PI * (i / (nx - 1.) + j / (ny - 1.)))) / 2;
+
+            bathymetry.x[id] = x;
+            bathymetry.y[id] = y;
         }
     }
 
-    return h;
+    return bathymetry;
 }

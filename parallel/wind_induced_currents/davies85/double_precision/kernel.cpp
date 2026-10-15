@@ -56,7 +56,7 @@ Kernel::Kernel(
 	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(double) * data.nz, data.dz.data());
 
 	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
-	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.h.data());
+	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.bathymetry.h.data());
 
 	bufferUA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(double) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(double) * data.nx * data.ny, data.ua.data());

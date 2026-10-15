@@ -26,29 +26,39 @@ TEST_CASE("Test viscosity uniform generator generate") {
 
 	vector<double> v;
 
+	Bathymetry bathymetry{
+		.h = v,
+		.x = v,
+		.y = v
+	};
+
+	WindSpeed windSpeed{
+		.u10 = v,
+		.v10 = v
+	};
+
+	WindStress windStress{
+		.qx = v,
+		.qy = v
+	};
+
+	Current current{
+		.ua = v,
+		.va = v
+	};
+
 	auto res = generator.generate(
 		VolumeState{
 			.nx = nx,
 			.ny = ny,
 			.nz = nz,
-			.dx = 0,
-			.dy = 0,
 			.dz = v,
-			.h = v
+			.bathymetry = bathymetry
 		},
-		WindCurrentData{
-			.speed = WindSpeedData {
-				.u10 = v,
-				.v10 = v
-			},
-			.stress = WindStressData {
-				.qx = v,
-				.qy = v
-			},
-			.current = Current {
-				.ua = v,
-				.va = v
-			}
+		WindCurrent{
+			.speed = windSpeed,
+			.stress = windStress,
+			.current = current
 		}
 	);
 

@@ -17,7 +17,7 @@ namespace Generators::Viscosity {
 			LinearGenerator(double ht, Turbulence::ViscosityState viscosity);
 
 			path addDirectory(path outDir) override;
-			vector<double> generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) override;
+			vector<double> generate(const Data::VolumeState& volume, const Data::WindCurrent& windCurrent) override;
 	};
 }
 

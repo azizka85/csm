@@ -24,13 +24,13 @@ path LinearGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> LinearGenerator::generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) {
+vector<double> LinearGenerator::generate(const Data::VolumeState& volume, const Data::WindCurrent& windCurrent) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;
 
 	auto& dz = volume.dz;
-	auto& h = volume.h;
+	auto& h = volume.bathymetry.h;
 
 	auto nus = viscosity.nus;
 	auto nut = viscosity.nut;

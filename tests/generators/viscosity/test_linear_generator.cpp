@@ -60,33 +60,37 @@ TEST_CASE("Test viscosity linear generator generate") {
 
 	size_t nz = dzData.size() + 1;
 
-	auto hData = hGenerator.generate(nx, ny);
+	auto bathymetry = hGenerator.generate(nx, ny, 1, 1);
 
 	Data::VolumeState volume{
 			.nx = nx,
 			.ny = ny,
 			.nz = nz,
-			.dx = 0,
-			.dy = 0,
 			.dz = dzData,
-			.h = hData
+			.bathymetry = bathymetry
 	};
 
 	vector<double> v;
 
-	Data::WindCurrentData windCurrent{
-			.speed = Data::WindSpeedData {
-				.u10 = v,
-				.v10 = v
-			},
-			.stress = Data::WindStressData {
-				.qx = v,
-				.qy = v
-			},
-			.current = Data::Current {
-				.ua = v,
-				.va = v
-			}
+	Data::WindSpeed windSpeed{
+		.u10 = v,
+		.v10 = v
+	};
+
+	Data::WindStress windStress{
+		.qx = v,
+		.qy = v
+	};
+
+	Data::Current current{
+		.ua = v,
+		.va = v
+	};
+
+	Data::WindCurrent windCurrent{
+		.speed = windSpeed,
+		.stress = windStress,
+		.current = current
 	};
 
 	auto res = nuGenerator.generate(

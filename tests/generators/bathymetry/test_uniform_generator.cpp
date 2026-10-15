@@ -22,11 +22,11 @@ TEST_CASE("Test bathymetry uniform generator generate") {
 	
 	UniformGenerator generator(h);
 
-	auto res = generator.generate(nx, ny);
+	auto res = generator.generate(nx, ny, 1, 1);
 
-	CHECK_EQ(res.size(), nx * ny);
+	CHECK_EQ(res.h.size(), nx * ny);
 
 	for (size_t i = 0; i < nx * ny; i++) {
-		CHECK_EQ(res[i], h);
+		CHECK_EQ(res.h[i], h);
 	}
 }

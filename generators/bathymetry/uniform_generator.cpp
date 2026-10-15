@@ -18,6 +18,27 @@ path Bathymetry::UniformGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Bathymetry::UniformGenerator::generate(size_t nx, size_t ny) {
-	return vector<double>(nx * ny, h);
+Data::Bathymetry Bathymetry::UniformGenerator::generate(
+	size_t nx, size_t ny,
+	double dx, double dy
+) {
+	Data::Bathymetry bathymetry{
+		.h = vector<double>(nx * ny, h),
+		.x = vector<double>(nx * ny),
+		.y = vector<double>(nx * ny)
+	};
+
+	for (int j = 0; j < ny; j++) {
+		for (int i = 0; i < nx; i++) {
+			double x = dx * i;
+			double y = dy * j;
+
+			size_t p = j + i * ny;
+
+			bathymetry.x[p] = x;
+			bathymetry.y[p] = y;
+		}
+	}
+
+	return bathymetry;
 }

@@ -50,7 +50,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		void writeData(
 			const TimeState& time,
 			const VolumeState& volume,
-			Calc::Data::WindCurrentData currentWindData,
+			const Calc::Data::WindCurrent& currentWindData,
 			vector<double>& z,
 			const Directories& dirs,
 			vector<double>& uf,

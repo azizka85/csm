@@ -5,14 +5,22 @@
 
 #include <filesystem>
 
+#include <calc/data.h>
+
 using namespace std;
 using namespace std::filesystem;
+
+using namespace Calc;
 
 namespace Generators::Bathymetry {
 	class IGenerator {
 		public:
 			virtual path addDirectory(path outDir) = 0;
-			virtual vector<double> generate(size_t nx, size_t ny) = 0;
+			
+			virtual Data::Bathymetry generate(
+				size_t nx, size_t ny,
+				double dx, double dy
+			) = 0;
 	};
 }
 

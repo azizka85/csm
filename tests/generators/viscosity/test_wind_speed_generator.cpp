@@ -50,7 +50,7 @@ TEST_CASE("Test viscosity wind speed generator generate") {
 
 	Bathymetry::UniformGenerator hGenerator(h);
 
-	auto hData = hGenerator.generate(nx, ny);
+	auto bathymetry = hGenerator.generate(nx, ny, 1, 1);
 
 	double u10 = 22;
 	double v10 = 0;
@@ -71,28 +71,32 @@ TEST_CASE("Test viscosity wind speed generator generate") {
 	vector<double> va(nx * ny, 0);
 
 	Data::VolumeState volume{
-			.nx = nx,
-			.ny = ny,
-			.nz = nz,
-			.dx = 0,
-			.dy = 0,
-			.dz = dzData,
-			.h = hData
+		.nx = nx,
+		.ny = ny,
+		.nz = nz,			
+		.dz = dzData,
+		.bathymetry = bathymetry
 	};
 
-	Data::WindCurrentData windCurrent{
-		.speed = Data::WindSpeedData {
-			.u10 = windData.speed.u10,
-			.v10 = windData.speed.v10
-		},
-		.stress = Data::WindStressData {
-			.qx = windData.stress.qx,
-			.qy = windData.stress.qy
-		},
-		.current = Data::Current {
-			.ua = ua,
-			.va = va
-		}
+	Data::WindSpeed windSpeed{
+		.u10 = windData.speed.u10,
+		.v10 = windData.speed.v10
+	};
+
+	Data::WindStress windStress{
+		.qx = windData.stress.qx,
+		.qy = windData.stress.qy
+	};
+
+	Data::Current current{
+		.ua = ua,
+		.va = va
+	};
+
+	Data::WindCurrent windCurrent{
+		.speed = windSpeed,
+		.stress = windStress,
+		.current = current
 	};
 
 	auto res = nuGenerator.generate(volume, windCurrent);

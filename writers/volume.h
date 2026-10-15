@@ -18,8 +18,8 @@ using namespace Calc::Data;
 namespace Writers::Volume {
 	using WriteVolumeDataHeaderFn = void(*) (
 		TimeState time,
-		VolumeState volume,
-		ofstream &file
+		const VolumeState& volume,
+		ofstream& file
 	);
 
 	using DataKind = variant<
@@ -37,14 +37,14 @@ namespace Writers::Volume {
 			
 			path write(
 				TimeState time,
-				VolumeState volume,
+				const VolumeState& volume,
 				const vector<Column> &columns,
 				const vector<DataKind> &data,
 				path outDir
 			);
 
-			void writeVolumeVector(string name, size_t precision, VolumeState& volume, const VolumeVector& vector, ofstream &file);
-			void writeVolumeScalar(string name, size_t precision, VolumeState& volume, const Scalar& data, ofstream &file);
+			void writeVolumeVector(string name, size_t precision, const VolumeState& volume, const VolumeVector& vector, ofstream &file);
+			void writeVolumeScalar(string name, size_t precision, const VolumeState& volume, const Scalar& data, ofstream &file);
 	};	
 }
 

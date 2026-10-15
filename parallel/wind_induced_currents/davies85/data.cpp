@@ -9,7 +9,7 @@ using namespace Parallel::WindInducedCurrents;
 Davies85::Data::Data(
 	double g, double kb, double k0, double k, double sigma, double num,
 	Calc::Data::PhysicalParams phys,	
-	double dx, double dy,
+	double dx, double dy, bool symmetrise,
 	shared_ptr<Generators::Area::IGenerator> areaGenerator,
 	shared_ptr<Generators::DZ::IGenerator> dzGenerator,
 	shared_ptr<Generators::Bathymetry::IGenerator> hGenerator,
@@ -30,6 +30,8 @@ Davies85::Data::Data(
 	this->dx = dx;
 	this->dy = dy;
 
+	this->symmetrise = symmetrise;
+
 	this->areaGenerator = areaGenerator;
 	this->dzGenerator = dzGenerator;
 	this->hGenerator = hGenerator;
@@ -37,7 +39,7 @@ Davies85::Data::Data(
 	this->nuGenerator = nuGenerator;
 }
 
-void Davies85::Data::init(bool symmetrise) {
+void Davies85::Data::init() {
 	auto geo = areaGenerator->generate();
 
 	nx = static_cast<size_t>(
@@ -52,12 +54,12 @@ void Davies85::Data::init(bool symmetrise) {
 
 	nz = dz.size();		
 
-	h = hGenerator->generate(nx, ny);
+	bathymetry = hGenerator->generate(nx, ny, dx, dy);
 
 	windData = qGenerator->generate(nx, ny);
 
 	if (symmetrise) {
-		h = Utils::Data::symmetrise(nx, ny, h);
+		bathymetry.h = Utils::Data::symmetrise(nx, ny, bathymetry.h);		
 
 		for (auto& wind : windData) {
 			wind.speed.u10 = Utils::Data::symmetrise(nx, ny, wind.speed.u10);
@@ -84,25 +86,21 @@ void Davies85::Data::init(bool symmetrise) {
 
 	currentWindIndex = 0;
 
+	Calc::Data::Current current{
+		.ua = ua,
+		.va = va
+	};
+
 	nu = nuGenerator->generate(
 		Calc::Data::VolumeState{
-			.nx = nx, .ny = ny, .nz = nz + 1,
-			.dx = dx, .dy = dy,
-			.dz = dz, .h = h
+			.nx = nx, .ny = ny, .nz = nz + 1,			
+			.dz = dz, 
+			.bathymetry = bathymetry
 		},
-		Calc::Data::WindCurrentData{
-			.speed = Calc::Data::WindSpeedData {
-				.u10 = windData[currentWindIndex].speed.u10,
-				.v10 = windData[currentWindIndex].speed.v10
-			},
-			.stress = Calc::Data::WindStressData {
-				.qx = windData[currentWindIndex].stress.qx,
-				.qy = windData[currentWindIndex].stress.qy
-			},
-			.current = Calc::Data::Current {
-				.ua = ua,
-				.va = va
-			}
+		Calc::Data::WindCurrent{
+			.speed = windData[currentWindIndex].speed,
+			.stress = windData[currentWindIndex].stress,
+			.current = current
 		}
 	);
 }

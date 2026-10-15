@@ -12,7 +12,7 @@ namespace Generators::Viscosity {
 			UniformGenerator(double nu);
 
 			path addDirectory(path outDir) override;
-			vector<double> generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) override;
+			vector<double> generate(const Data::VolumeState& volume, const Data::WindCurrent& windCurrent) override;
 	};
 }
 

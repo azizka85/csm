@@ -22,7 +22,7 @@ TEST_CASE("Test bathymetry GEBCO generator generate") {
 
 	GEBCOGenerator generator(params);
 
-	auto depths = generator.generate(11, 11);
+	auto bathymetry = generator.generate(11, 11, 1, 1);
 
-	CHECK_EQ(depths.size(), 121);
+	CHECK_EQ(bathymetry.h.size(), 121);
 }

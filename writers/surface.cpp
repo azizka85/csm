@@ -12,7 +12,7 @@ Writer::Writer(string fileName, WriteSurfaceDataHeaderFn writeSurfaceDataHeader)
 	this->writeSurfaceDataHeader = writeSurfaceDataHeader;
 }
 
-void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState& surface, const SurfaceVector& vector, ofstream &file) {
+void Writer::writeSurfaceVector(string name, size_t precision, const SurfaceState& surface, const SurfaceVector& vector, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
@@ -30,7 +30,7 @@ void Writer::writeSurfaceVector(string name, size_t precision, SurfaceState& sur
 	}
 }
 
-void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState& surface, const Scalar &data, ofstream &file) {
+void Writer::writeSurfaceScalar(string name, size_t precision, const SurfaceState& surface, const Scalar &data, ofstream &file) {
 	auto nx = surface.nx;
 	auto ny = surface.ny;
 
@@ -48,7 +48,7 @@ void Writer::writeSurfaceScalar(string name, size_t precision, SurfaceState& sur
 
 path Writer::write(
 	TimeState time,
-	SurfaceState surface,
+	const SurfaceState& surface,
 	const vector<Column>& columns,
 	const vector<DataKind>& data,
 	path outDir

@@ -142,20 +142,20 @@ int main() {
 			viscosity, viscosity, viscosity, ""
 		);
 
+		bool symmetrise = true;
+
 		auto data = Davies85::Data(
 			g, kb, k0, k, sigma, num,
 			phys,
-			dx, dy, 
+			dx, dy, symmetrise,
 			areaGenerator,
 			dzGenerator,
 			hGenerator,
 			qGenerator,
 			nuGenerator
-		);
+		);		
 
-		bool symmetrise = true;
-
-		data.init(symmetrise);
+		data.init();
 
 		vector<string> baseSources = {
 			"opencl/double_precision/utils/max.cl",

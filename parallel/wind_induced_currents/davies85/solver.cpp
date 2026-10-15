@@ -91,7 +91,7 @@ void Solver::setInitialCondition(
 void Solver::writeData(
 	const TimeState& time,
 	const VolumeState& volume,
-	WindCurrentData currentWindData,
+	const WindCurrent& currentWindData,
 	vector<double>& z,
 	const Directories& dirs,
 	vector<double>& uf,
@@ -106,9 +106,12 @@ void Solver::writeData(
 	Writers::Volume::Writer& volumeElemWriter,
 	Writers::Volume::Writer& volumeNodeWriter
 ) {
+	size_t nx = data.symmetrise ? volume.nx / 2 : volume.nx;
+	size_t ny = data.symmetrise ? volume.ny / 2 : volume.ny;
+
 	surfaceWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
-		SurfaceState{ .nx = volume.nx, .ny = volume.ny, .dx = volume.dx, .dy = volume.dy },
+		SurfaceState{ .nx = nx, .ny = ny, .bathymetry = volume.bathymetry },
 		vector<Column>{
 			Column{ .name = "va", .precision = 3 },
 			Column{ .name = "w10", .precision = 3 },
@@ -140,7 +143,7 @@ void Solver::writeData(
 
 	volumeElemWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
-		VolumeState{ .nx = volume.nx, .ny = volume.ny, .nz = volume.nz, .dx = volume.dx, .dy = volume.dy, .dz = volume.dz, .h = volume.h },
+		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
 			Column{ .name = "v", .precision = 3 }
 		},
@@ -152,7 +155,7 @@ void Solver::writeData(
 
 	volumeNodeWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
-		VolumeState{ .nx = volume.nx, .ny = volume.ny, .nz = volume.nz + 1, .dx = volume.dx, .dy = volume.dy, .dz = volume.dz, .h = volume.h },
+		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz + 1, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
 			Column{ .name = "nu", .precision = 3 }
 		},
@@ -168,7 +171,7 @@ void Solver::writeData(
 void Solver::solve() {
 	auto dirs = createDirectory();	
 
-	auto [hMin, hMax] = Utils::Bathymetry::minMaxH(data.h, data.nx, data.ny);
+	auto [hMin, hMax] = Utils::Bathymetry::minMaxH(data.bathymetry.h, data.nx, data.ny);
 
 	double dzMin = *min_element(data.dz.begin(), data.dz.end());
 
@@ -185,11 +188,15 @@ void Solver::solve() {
 		data.z
 	);
 
-	vector<double> u10 = data.windData[data.currentWindIndex].speed.u10;
-	vector<double> v10 = data.windData[data.currentWindIndex].speed.v10;
+	WindSpeed windSpeed{
+		.u10 = data.windData[data.currentWindIndex].speed.u10,
+		.v10 = data.windData[data.currentWindIndex].speed.v10
+	};
 
-	vector<double> qx = data.windData[data.currentWindIndex].stress.qx;
-	vector<double> qy = data.windData[data.currentWindIndex].stress.qy;
+	WindStress windStress{
+		.qx = data.windData[data.currentWindIndex].stress.qx,
+		.qy = data.windData[data.currentWindIndex].stress.qy
+	};
 
 	double nuMax = Utils::Viscosity::maxNU(data.nu, data.nx, data.ny, data.nz + 1);
 
@@ -228,36 +235,32 @@ void Solver::solve() {
 
 	heightWriter.write(
 		TimeState{ .m = m, .t = t },
-		SurfaceState{ .nx = data.nx, .ny = data.ny, .dx = data.dx, .dy = data.dy }, 
+		SurfaceState{ .nx = data.symmetrise ? data.nx / 2 : data.nx, .ny = data.symmetrise ? data.ny / 2 : data.ny, .bathymetry = data.bathymetry }, 
 		{
 			Column {.name = "h", .precision = 3 }
 		}, 
 		{
 			Scalar {
-				.v = data.h
+				.v = data.bathymetry.h
 			}
 		},
 		dirs.root
 	);
 
-	VolumeState volume = { .nx = data.nx, .ny = data.ny, .nz = data.nz, .dx = data.dx, .dy = data.dy, .dz = data.dz, .h = data.h };
+	VolumeState volume = { .nx = data.nx, .ny = data.ny, .nz = data.nz, .dz = data.dz, .bathymetry = data.bathymetry };
+
+	Current current{
+		.ua = data.ua,
+		.va = data.va
+	};
 
 	writeData(
 		TimeState{ .m = m, .t = t },
 		volume,
-		WindCurrentData{
-			.speed = WindSpeedData {
-				.u10 = u10,
-				.v10 = v10
-			},
-			.stress = WindStressData {
-				.qx = qx,
-				.qy = qy
-			},
-			.current = Current {
-				.ua = data.ua,
-				.va = data.va
-			}
+		WindCurrent{
+			.speed = windSpeed,
+			.stress = windStress,
+			.current = current
 		},
 		data.z,
 		dirs,
@@ -329,7 +332,7 @@ void Solver::solve() {
 
 			updateDT = false;
 
-			cout << format("Update dt = {}", dt) << endl;
+			std::cout << format("Update dt = {}", dt) << endl;
 		}
 		else {
 			dt = timeStep->calculate(Time::State{
@@ -359,25 +362,16 @@ void Solver::solve() {
 			}
 
 			if (interpolateWind) {
-				kernel->updateQUV10(u10, v10, qx, qy);
+				kernel->updateQUV10(windSpeed.u10, windSpeed.v10, windStress.qx, windStress.qy);
 			}
 
 			writeData(
 				TimeState{ .m = m, .t = t },
 				volume,
-				WindCurrentData{
-					.speed = WindSpeedData {
-						.u10 = u10,
-						.v10 = v10
-					},
-					.stress = WindStressData {
-						.qx = qx,
-						.qy = qy
-					},
-					.current = Current {
-						.ua = data.ua,
-						.va = data.va
-					}
+				WindCurrent{
+					.speed = windSpeed,
+					.stress = windStress,
+					.current = current
 				},
 				data.z,
 				dirs,

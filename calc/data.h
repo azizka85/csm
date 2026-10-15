@@ -22,6 +22,12 @@ namespace Calc::Data {
 		size_t precision;
 	};
 
+	struct Bathymetry {
+		vector<double> h;
+		vector<double> x;
+		vector<double> y;
+	};
+
 	struct TimeState {
 		size_t m;
 		double t;
@@ -31,8 +37,7 @@ namespace Calc::Data {
 		size_t nx;
 		size_t ny;
 
-		double dx;
-		double dy;
+		Bathymetry& bathymetry;
 	};
 
 	struct SurfaceVector {
@@ -47,13 +52,11 @@ namespace Calc::Data {
 	struct VolumeState {
 		size_t nx;
 		size_t ny;
-		size_t nz;
-
-		double dx;
-		double dy;
+		size_t nz;		
 
 		vector<double> &dz;
-		vector<double> &h;
+
+		Bathymetry& bathymetry;
 	};
 
 	struct VolumeVector {
@@ -67,19 +70,9 @@ namespace Calc::Data {
 		vector<double> v10;
 	};
 
-	struct WindSpeedData {
-		vector<double> &u10;
-		vector<double> &v10;
-	};
-
 	struct WindStress {
 		vector<double> qx;
 		vector<double> qy;
-	};
-
-	struct WindStressData {
-		vector<double> &qx;
-		vector<double> &qy;
 	};
 
 	struct Wind {
@@ -93,10 +86,10 @@ namespace Calc::Data {
 		vector<double> &va;
 	};
 
-	struct WindCurrentData {
-		WindSpeedData speed;
-		WindStressData stress;
-		Current current;
+	struct WindCurrent {
+		WindSpeed& speed;
+		WindStress& stress;
+		Current& current;
 	};
 
 	struct CartesianBound {

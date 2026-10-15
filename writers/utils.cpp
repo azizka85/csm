@@ -4,14 +4,14 @@ using namespace Writers;
 
 void Utils::defaultWriteSurfaceDataHeader(
     TimeState time,
-    SurfaceState surface,
+    const SurfaceState& surface,
     ofstream &file
 ) {
     auto nx = surface.nx;
-    auto ny = surface.ny;
+    auto ny = surface.ny;    
 
-    auto dx = surface.dx;
-    auto dy = surface.dy;
+    auto& x = surface.bathymetry.x;
+    auto& y = surface.bathymetry.y;
 
     file << "# vtk DataFile Version 3.0" << endl;
     file << format("TIME {:.3f}", time.t) << endl;
@@ -20,12 +20,11 @@ void Utils::defaultWriteSurfaceDataHeader(
     file << format("DIMENSIONS {} {} 1", nx, ny) << endl;
     file << format("POINTS {} double", nx * ny) << endl;
 
-    for (int j = 0; j < ny; j++) {
-        for (int i = 0; i < nx; i++) {
-            double x = dx * i;
-            double y = dy * j;
+    for (size_t j = 0; j < ny; j++) {
+        for (size_t i = 0; i < nx; i++) {
+            size_t p = j + i * ny;
 
-            file << format("{:.3f} {:.3f} 0.0", x, y) << endl;
+            file << format("{:.3f} {:.3f} 0.0", x[p], y[p]) << endl;
         }
     }
 
@@ -35,7 +34,7 @@ void Utils::defaultWriteSurfaceDataHeader(
     file << format("POINT_DATA {}", nx * ny) << endl;
 }
 
-void Utils::writeVolumeTopHeader(TimeState time, VolumeState volume, ofstream& file) {
+void Utils::writeVolumeTopHeader(TimeState time, const VolumeState& volume, ofstream& file) {
     auto nx = volume.nx;
     auto ny = volume.ny;
     auto nz = volume.nz;
@@ -48,7 +47,7 @@ void Utils::writeVolumeTopHeader(TimeState time, VolumeState volume, ofstream& f
     file << format("POINTS {} double", nx * ny * nz) << endl;
 }
 
-void Utils::writeVolumeBottomHeader(TimeState time, VolumeState volume, ofstream& file) {
+void Utils::writeVolumeBottomHeader(TimeState time, const VolumeState& volume, ofstream& file) {
     auto nx = volume.nx;
     auto ny = volume.ny;
     auto nz = volume.nz;
@@ -59,16 +58,16 @@ void Utils::writeVolumeBottomHeader(TimeState time, VolumeState volume, ofstream
     file << format("POINT_DATA {}", nx * ny * nz) << endl;
 }
 
-void Utils::writeVolumeElemHeader(TimeState time, VolumeState volume, ofstream& file) {
+void Utils::writeVolumeElemHeader(TimeState time, const VolumeState& volume, ofstream& file) {
     auto nx = volume.nx;
     auto ny = volume.ny;
     auto nz = volume.nz;
 
-    auto dx = volume.dx;
-    auto dy = volume.dy;
+    auto& dz = volume.dz;
 
-    auto dz = volume.dz;
-    auto h = volume.h;
+    auto& x = volume.bathymetry.x;
+    auto& y = volume.bathymetry.y;
+    auto& h = volume.bathymetry.h;
 
     writeVolumeTopHeader(time, volume, file);
 
@@ -77,14 +76,11 @@ void Utils::writeVolumeElemHeader(TimeState time, VolumeState volume, ofstream& 
     for (int k = 0; k < nz; k++) {
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                double x = dx * i;
-                double y = dy * j;
-
                 int p = j + i * ny;
 
                 z[p] += h[p] * dz[k] / 2;
 
-                file << format("{:.3f} {:.3f} {:.3f}", x, y, z[p]) << endl;
+                file << format("{:.3f} {:.3f} {:.3f}", x[p], y[p], z[p]) << endl;
 
                 z[p] += h[p] * dz[k] / 2;
             }
@@ -94,16 +90,16 @@ void Utils::writeVolumeElemHeader(TimeState time, VolumeState volume, ofstream& 
     writeVolumeBottomHeader(time, volume, file);
 }
 
-void Utils::writeVolumeNodeHeader(TimeState time, VolumeState volume, ofstream& file) {
+void Utils::writeVolumeNodeHeader(TimeState time, const VolumeState& volume, ofstream& file) {
     auto nx = volume.nx;
     auto ny = volume.ny;
     auto nz = volume.nz;
 
-    auto dx = volume.dx;
-    auto dy = volume.dy;
+    auto& dz = volume.dz;
 
-    auto dz = volume.dz;
-    auto h = volume.h;
+    auto& x = volume.bathymetry.x;
+    auto& y = volume.bathymetry.y;
+    auto& h = volume.bathymetry.h;
 
     writeVolumeTopHeader(time, volume, file);
 
@@ -112,12 +108,9 @@ void Utils::writeVolumeNodeHeader(TimeState time, VolumeState volume, ofstream& 
     for (int k = 0; k < nz; k++) {
         for (int j = 0; j < ny; j++) {
             for (int i = 0; i < nx; i++) {
-                double x = dx * i;
-                double y = dy * j;
-
                 int p = j + i * ny;
 
-                file << format("{:.3f} {:.3f} {:.3f}", x, y, z[p]) << endl;
+                file << format("{:.3f} {:.3f} {:.3f}", x[p], y[p], z[p]) << endl;
 
                 if (k < nz - 1) {
                     z[p] += h[p] * dz[k];

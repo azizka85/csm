@@ -18,8 +18,8 @@ using namespace Calc::Data;
 namespace Writers::Surface {	
 	using WriteSurfaceDataHeaderFn = void(*) (
 		TimeState time,
-		SurfaceState surface,
-		ofstream &file
+		const SurfaceState& surface,
+		ofstream& file
 	);
 
 	using DataKind = variant<
@@ -37,14 +37,14 @@ namespace Writers::Surface {
 
 			path write(
 				TimeState time,
-				SurfaceState surface,
+				const SurfaceState& surface,
 				const vector<Column>& columns,
 				const vector<DataKind>& data,
 				path outDir
 			);
 
-			void writeSurfaceVector(string name, size_t precision, SurfaceState &surface, const SurfaceVector &vector, ofstream &file);
-			void writeSurfaceScalar(string name, size_t precision, SurfaceState &surface, const Scalar &data, ofstream &file);
+			void writeSurfaceVector(string name, size_t precision, const SurfaceState &surface, const SurfaceVector &vector, ofstream &file);
+			void writeSurfaceScalar(string name, size_t precision, const SurfaceState &surface, const Scalar &data, ofstream &file);
 	};
 }
 

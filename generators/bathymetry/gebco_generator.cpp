@@ -46,7 +46,10 @@ path GEBCOGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_t ny) {
+Data::Bathymetry Generators::Bathymetry::GEBCOGenerator::generate(
+    size_t nx, size_t ny,
+    double dx, double dy
+) {
 	Checks::Area::checkNumElemNodes(nx, ny);
 
     NcFile bathymetryFile(params.filePath.string(), NcFile::read);
@@ -74,9 +77,6 @@ vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_
 
     auto bound = Utils::toCartesian(params.bound);
 
-    double dx = (bound.maxX - bound.minX) / (nx - 1);
-    double dy = (bound.maxY - bound.minY) / (ny - 1);
-
     auto interpFunc = bilinear_uniform(
         move(elevations),
         latSize, lonSize,
@@ -84,7 +84,11 @@ vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_
         lons.front(), lats.front()
     );
 
-    vector<double> depths(nx * ny);
+    Data::Bathymetry bathymetry{
+        .h = vector<double>(nx * ny),
+        .x = vector<double>(nx * ny),
+        .y = vector<double>(nx * ny)
+    };
 
     double epsilon = 0.003;
 
@@ -97,7 +101,10 @@ vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_
             double x = bound.minX + dx * i;
             double y = bound.minY + dy * j;
 
-            UTMUPS::Reverse(39, true, x, y, lat, lon);            
+            UTMUPS::Reverse(39, true, x, y, lat, lon);  
+
+            bathymetry.x[p] = lon;
+            bathymetry.y[p] = lat;
 
             if (
                 lat >= lats.front() + epsilon && lat <= lats.back() - epsilon &&
@@ -106,11 +113,11 @@ vector<double> Generators::Bathymetry::GEBCOGenerator::generate(size_t nx, size_
                 double elevation = interpFunc(lon, lat);
 
                 if (elevation < params.refDepth - params.minDepth) {
-                    depths[p] = abs(elevation - params.refDepth);
+                    bathymetry.h[p] = abs(elevation - params.refDepth);
                 }
             }
         }
     }
 
-    return depths;
+    return bathymetry;
 }

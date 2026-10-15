@@ -39,7 +39,10 @@ namespace WindInducedCurrents::Davies85 {
 		double dx;
 		double dy;
 
+		bool symmetrise;
+
 		bool calcNU;
+		bool interpolateWind;
 		
 		double endTime;
 		double outputTimeStep;
@@ -155,10 +158,26 @@ namespace WindInducedCurrents::Davies85 {
 			vector<double>& vd
 		);
 
+		void interpolateQUV10(
+			int nx, int ny, double alpha,
+			const vector<double>& u10c,
+			const vector<double>& v10c,
+			const vector<double>& qxc,
+			const vector<double>& qyc,
+			const vector<double>& u10n,
+			const vector<double>& v10n,
+			const vector<double>& qxn,
+			const vector<double>& qyn,
+			vector<double>& u10,
+			vector<double>& v10,
+			vector<double>& qx,
+			vector<double>& qy
+		);
+
 		void writeData(
 			const TimeState& time,
 			const VolumeState& volume,
-			Calc::Data::WindCurrentData currentWindData,
+			const Calc::Data::WindCurrent& currentWindData,
 			vector<double>& z,
 			const Directories& dirs,
 			vector<double>& uf,
@@ -178,7 +197,8 @@ namespace WindInducedCurrents::Davies85 {
 		Solver(
 			PhysicalParams phys,
 			double g, double kb,
-			double dx, double dy, bool calcNU,
+			double dx, double dy, bool symmetrise,
+			bool calcNU, bool interpolateWind,
 			double endTime, double outputTimeStep, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<Generators::Area::IGenerator> areaGenerator,

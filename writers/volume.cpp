@@ -12,7 +12,7 @@ Writer::Writer(string fileName, WriteVolumeDataHeaderFn writeVolumeDataHeader) {
 	this->writeVolumeDataHeader = writeVolumeDataHeader;
 }
 
-path Writer::write(TimeState time, VolumeState volume, const vector<Column> &columns, const vector<DataKind> &data, path outDir) {
+path Writer::write(TimeState time, const VolumeState& volume, const vector<Column>& columns, const vector<DataKind>& data, path outDir) {
 	FS::checkPath(outDir);
 
 	auto fName = fileName.empty() ? format("data.{:03}.vtk", time.m) : fileName;
@@ -35,14 +35,14 @@ path Writer::write(TimeState time, VolumeState volume, const vector<Column> &col
 	return filePath;
 }
 
-void Writer::writeVolumeVector(string name, size_t precision, VolumeState& volume, const VolumeVector& vector, ofstream &file) {
+void Writer::writeVolumeVector(string name, size_t precision, const VolumeState& volume, const VolumeVector& vector, ofstream &file) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;
 
-	auto vx = vector.vx;
-	auto vy = vector.vy;
-	auto vz = vector.vz;
+	auto& vx = vector.vx;
+	auto& vy = vector.vy;
+	auto& vz = vector.vz;
 
 	file << format("VECTORS {} double", name) << endl;
 
@@ -58,7 +58,7 @@ void Writer::writeVolumeVector(string name, size_t precision, VolumeState& volum
 	}
 }
 
-void Writer::writeVolumeScalar(string name, size_t precision, VolumeState& volume, const Scalar &data, ofstream &file) {
+void Writer::writeVolumeScalar(string name, size_t precision, const VolumeState& volume, const Scalar& data, ofstream& file) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;

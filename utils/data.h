@@ -42,6 +42,8 @@ namespace Utils::Data {
     );
 
     vector<double> symmetrise(int nx, int ny, vector<double> &v);
+
+    void interpolate(int nx, int ny, double alpha, const vector<double>& vc, const vector<double>& vn, vector<double>& v);
 }
 
 #endif

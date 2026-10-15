@@ -121,3 +121,13 @@ vector<double> Data::symmetrise(int nx, int ny, vector<double> &v) {
 
     return vt;
 }
+
+void Data::interpolate(int nx, int ny, double alpha, const vector<double>& vc, const vector<double>& vn, vector<double>& v) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            int k = j + i * ny;
+
+            v[k] = vc[k] + alpha * (vn[k] - vc[k]);
+        }
+    }
+}

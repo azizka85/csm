@@ -56,7 +56,7 @@ Kernel::Kernel(
 	bufferDZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nz);
 	err = queue.enqueueWriteBuffer(bufferDZ, CL_TRUE, 0, sizeof(float) * data.nz, dzF.data());
 
-	vector<float> hF(data.h.begin(), data.h.end());
+	vector<float> hF(data.bathymetry.h.begin(), data.bathymetry.h.end());
 	bufferH = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferH, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, hF.data());
 

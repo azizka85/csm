@@ -18,7 +18,7 @@ path UniformGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<double> UniformGenerator::generate(Data::VolumeState volume, Data::WindCurrentData windCurrent) {
+vector<double> UniformGenerator::generate(const Data::VolumeState& volume, const Data::WindCurrent& windCurrent) {
 	auto nx = volume.nx;
 	auto ny = volume.ny;
 	auto nz = volume.nz;
