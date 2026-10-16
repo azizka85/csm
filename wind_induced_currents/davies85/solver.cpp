@@ -998,7 +998,7 @@ void Solver::solve() {
 				t, nuMax, maxRes, umd, vmd, zm, dt, calcTime / 1000
 			) << endl;		
 
-			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd });
+			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd, zm });
 
 			Utils::Data::updateData(nx, ny, zp, z);
 			Utils::Data::updateData(nx, ny, nz, up, uf);
