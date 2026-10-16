@@ -16,13 +16,15 @@ using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
 	Data& data, 
-	bool calcNU, bool interpolateWind,
+	bool calcNU, bool interpolateWind, bool writeOutput,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
 ): data(data) {
 	this->calcNU = calcNU;
 	this->interpolateWind = interpolateWind;
+
+	this->writeOutput = writeOutput;
 
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
@@ -233,19 +235,21 @@ void Solver::solve() {
 	Writers::Volume::Writer volumeElemWriter("", Writers::Utils::writeVolumeElemHeader);
 	Writers::Volume::Writer volumeNodeWriter("", Writers::Utils::writeVolumeNodeHeader);
 
-	heightWriter.write(
-		TimeState{ .m = m, .t = t },
-		SurfaceState{ .nx = data.symmetrise ? data.nx / 2 : data.nx, .ny = data.symmetrise ? data.ny / 2 : data.ny, .bathymetry = data.bathymetry }, 
+	if (writeOutput) {
+		heightWriter.write(
+			TimeState{ .m = m, .t = t },
+			SurfaceState{ .nx = data.symmetrise ? data.nx / 2 : data.nx, .ny = data.symmetrise ? data.ny / 2 : data.ny, .bathymetry = data.bathymetry },
 		{
 			Column {.name = "h", .precision = 3 }
-		}, 
+		},
 		{
 			Scalar {
 				.v = data.bathymetry.h
 			}
 		},
-		dirs.root
-	);
+			dirs.root
+		);
+	}
 
 	VolumeState volume = { .nx = data.nx, .ny = data.ny, .nz = data.nz, .dz = data.dz, .bathymetry = data.bathymetry };
 
@@ -254,23 +258,25 @@ void Solver::solve() {
 		.va = data.va
 	};
 
-	writeData(
-		TimeState{ .m = m, .t = t },
-		volume,
-		WindCurrent{
-			.speed = windSpeed,
-			.stress = windStress,
-			.current = current
-		},
-		data.z,
-		dirs,
-		data.uf, data.ua, u,
-		data.vf, data.va, v,
-		w, data.nu,
-		surfaceWriter,
-		volumeElemWriter,
-		volumeNodeWriter
-	);
+	if (writeOutput) {
+		writeData(
+			TimeState{ .m = m, .t = t },
+			volume,
+			WindCurrent{
+				.speed = windSpeed,
+				.stress = windStress,
+				.current = current
+			},
+			data.z,
+			dirs,
+			data.uf, data.ua, u,
+			data.vf, data.va, v,
+			w, data.nu,
+			surfaceWriter,
+			volumeElemWriter,
+			volumeNodeWriter
+		);
+	}
 
 	long long calcTime = 0;
 
@@ -352,7 +358,10 @@ void Solver::solve() {
 
 			kernel->calcResidual();
 
-			kernel->updateUVA();
+			if (writeOutput) {
+				kernel->updateUVA();				
+			}
+			
 			kernel->updateUVF();
 			kernel->updateUVD();
 			kernel->updateZ();
@@ -365,23 +374,25 @@ void Solver::solve() {
 				kernel->updateQUV10(windSpeed.u10, windSpeed.v10, windStress.qx, windStress.qy);
 			}
 
-			writeData(
-				TimeState{ .m = m, .t = t },
-				volume,
-				WindCurrent{
-					.speed = windSpeed,
-					.stress = windStress,
-					.current = current
-				},
-				data.z,
-				dirs,
-				data.uf, data.ua, u,
-				data.vf, data.va, v,
-				w, data.nu,
-				surfaceWriter,
-				volumeElemWriter,
-				volumeNodeWriter
-			);
+			if (writeOutput) {
+				writeData(
+					TimeState{ .m = m, .t = t },
+					volume,
+					WindCurrent{
+						.speed = windSpeed,
+						.stress = windStress,
+						.current = current
+					},
+					data.z,
+					dirs,
+					data.uf, data.ua, u,
+					data.vf, data.va, v,
+					w, data.nu,
+					surfaceWriter,
+					volumeElemWriter,
+					volumeNodeWriter
+				);
+			}			
 
 			auto umd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, up, data.uf);
 			auto vmd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, vp, data.vf);
@@ -392,7 +403,7 @@ void Solver::solve() {
 				Utils::Data::maxAbsElem(data.nx, data.ny, data.nz, data.vd)
 			);
 
-			cout << format(
+			std::cout << format(
 				"Write data in file t={:.3f}, nu={:.5f}, maxAbsRes={}, convergence of u={:.5f}, v={:.5f}, z={:.19f} with dt={:.5}, calc time={}",
 				t, nuMax, maxRes, umd, vmd, zmd, dt, calcTime / 1000
 			) << endl;
