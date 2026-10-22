@@ -37,13 +37,7 @@ GEBCOGenerator::GEBCOGenerator(GEBCOGeneratorParams params) {
 path GEBCOGenerator::addDirectory(path outDir) {
 	auto& bound = params.bound;	
 
-	return outDir / path(
-		format(
-			"bathymetry, GEBCO, lat={}-{}, lon={}-{}",
-			bound.latMin, bound.latMax,
-			bound.lonMin, bound.lonMax
-		)
-	);
+	return outDir / path("bathymetry, GEBCO");
 }
 
 Data::Bathymetry Generators::Bathymetry::GEBCOGenerator::generate(

@@ -203,7 +203,6 @@ void Solver::solve() {
 	double nuMax = Utils::Viscosity::maxNU(data.nu, data.nx, data.ny, data.nz + 1);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
-	double dtp = dt;
 
 	bool updateDT = false;
 
@@ -326,9 +325,7 @@ void Solver::solve() {
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
-		if (dt1 < dtp || updateDT) {
-			dtp = dt1;
-
+		if (updateDT) {
 			dt = timeStep->calculate(Time::State{
 				.t = t,
 				.dt = dt1,

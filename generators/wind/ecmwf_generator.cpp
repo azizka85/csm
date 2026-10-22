@@ -43,8 +43,8 @@ path Generators::Wind::ECMWFGenerator::addDirectory(path outDir) {
 	return outDir / path(
         params.windStress->dirName(
             format(
-                "{}, lat={}-{}, lon={}-{}", 
-                attr, bound.latMin, bound.latMax, bound.lonMin, bound.lonMax
+                "{}", 
+                attr
             )
         )
 	);

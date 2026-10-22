@@ -29,11 +29,11 @@ int main() {
 	const double rhoAir = 1.225;
 	const double Cd = 2.5e-3;
 
-	const double latMin = 36;
-	const double latMax = 47;
+	const double latMin = 42.75;
+	const double latMax = 45.25;
 
-	const double lonMin = 46;
-	const double lonMax = 56;
+	const double lonMin = 48.25;
+	const double lonMax = 49.75;
 
 	double refDepth = -25;
 	double minDepth = 5;
@@ -66,10 +66,17 @@ int main() {
 	const double endTime = 90000;
 	const double outputTimeStep = 600;
 
-	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
-	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
+	const string gebcoFilePath = "data/bathymetry/gebco_2026_n45.5_s42.5_w48.0_e50.0.nc";
+	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n45.5_e50_s42.5_w48.nc";
 
 	const string outDir = "out";
+
+	const bool symmetrise = true;
+
+	const bool calcNU = true;
+	const bool interpolateWind = true;
+
+	bool writeOutput = true;
 
 	try {
 		auto timeStep = make_shared<Calc::Time::DefaultAdjustTimeStep>(
@@ -80,11 +87,11 @@ int main() {
 		);
 
 		Calc::Data::GeoBound geoBound{
-				.latMin = latMin,
-				.lonMin = lonMin,
+			.latMin = latMin,
+			.lonMin = lonMin,
 
-				.latMax = latMax,
-				.lonMax = lonMax
+			.latMax = latMax,
+			.lonMax = lonMax
 		};
 
 		auto areaGenerator = make_shared<Generators::Area::ProjGenerator>(geoBound);
@@ -140,9 +147,7 @@ int main() {
 
 		auto nuGenerator = make_shared<Generators::Viscosity::WindSpeedGenerator>(
 			viscosity, viscosity, viscosity, ""
-		);
-
-		bool symmetrise = true;
+		);		
 
 		auto data = Davies85::Data(
 			g, kb, k0, k, sigma, num,
@@ -176,20 +181,17 @@ int main() {
 
 		auto sources = baseSources;
 
-		sources.insert(sources.end(), windSpeedViscositySources.begin(), windSpeedViscositySources.end());
-
-		bool calcNU = true;
-		bool interpolateWind = true;
+		sources.insert(sources.end(), windSpeedViscositySources.begin(), windSpeedViscositySources.end());		
 
 		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
 			data, 
 			sources,
 			interpolateWind
-		);
+		);		
 
 		Davies85::Solver solver(
 			data, 
-			calcNU, interpolateWind,			
+			calcNU, interpolateWind, writeOutput,			
 			endTime, outputTimeStep, outDir,
 			timeStep,
 			kernel

@@ -439,11 +439,11 @@ void Kernel::updateQUV10Device(bool interpolateWind) {
 	err = queue.enqueueWriteBuffer(bufferQY, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, qyF.data());
 
 	if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {
-		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(double) * data.nx * data.ny);
-		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferU10, bufferU10C, 0, 0, sizeof(float) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferV10, bufferV10C, 0, 0, sizeof(float) * data.nx * data.ny);
 
-		err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(double) * data.nx * data.ny);
-		err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(double) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQX, bufferQXC, 0, 0, sizeof(float) * data.nx * data.ny);
+		err = queue.enqueueCopyBuffer(bufferQY, bufferQYC, 0, 0, sizeof(float) * data.nx * data.ny);
 
 		vector<float> u10NF(data.windData[data.currentWindIndex + 1].speed.u10.begin(), data.windData[data.currentWindIndex + 1].speed.u10.end());
 		err = queue.enqueueWriteBuffer(bufferU10N, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, u10NF.data());

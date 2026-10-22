@@ -1,4 +1,4 @@
-inline void viscosity(
+__kernel void viscosity(
 	const double k0, const  double rho, const double f,
 	const double k, const double sigma, const double num,
 	int ny, int nz,
