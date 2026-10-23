@@ -108,6 +108,7 @@ void Davies85::Data::init() {
 path Davies85::Data::addDirectory(path outDir) {
 	outDir = hGenerator->addDirectory(outDir);
 	outDir = qGenerator->addDirectory(outDir);
+	outDir = nuGenerator->addDirectory(outDir);
 	outDir = areaGenerator->addDirectory(outDir);
 
 	outDir = outDir / format("dx={}, dy={}", dx, dy);

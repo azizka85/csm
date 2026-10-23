@@ -90,6 +90,29 @@ void Solver::setInitialCondition(
 	}
 }
 
+void Solver::calculateSurfaceCurrent(
+	int nx, int ny, int nz,
+	const VolumeState& volume,
+	const WindStress& windStress,
+	const vector<double>& u,
+	const vector<double>& v,
+	const vector<double>& nu,
+	vector<double>& us,
+	vector<double>& vs
+) {
+	for (int i = 0; i < nx; i++) {
+		for (int j = 0; j < ny; j++) {
+			int p = j + i * ny;
+			int k = p * nz;
+
+			double alpha = volume.bathymetry.h[p] * volume.dz[0] / 2 / data.rho / nu[k];
+
+			us[p] = alpha * windStress.qx[p] + u[k];
+			vs[p] = alpha * windStress.qy[p] + v[k];
+		}
+	}
+}
+
 void Solver::writeData(
 	const TimeState& time,
 	const VolumeState& volume,
@@ -98,9 +121,11 @@ void Solver::writeData(
 	const Directories& dirs,
 	vector<double>& uf,
 	vector<double>& ua,
+	vector<double>& us,
 	vector<double>& u,
 	vector<double>& vf,
 	vector<double>& va,
+	vector<double>& vs,
 	vector<double>& v,
 	vector<double>& w,
 	vector<double>& nu,
@@ -111,16 +136,26 @@ void Solver::writeData(
 	size_t nx = data.symmetrise ? volume.nx / 2 : volume.nx;
 	size_t ny = data.symmetrise ? volume.ny / 2 : volume.ny;
 
+	Utils::Data::volumePlusSurface(nx, ny, volume.nz, uf, ua, u);
+	Utils::Data::volumePlusSurface(nx, ny, volume.nz, vf, va, v);
+
+	calculateSurfaceCurrent(nx, ny, volume.nz, volume, currentWindData.stress, u, v, nu, us, vs);
+
 	surfaceWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
 		SurfaceState{ .nx = nx, .ny = ny, .bathymetry = volume.bathymetry },
 		vector<Column>{
+			Column{ .name = "vs", .precision = 3},
 			Column{ .name = "va", .precision = 3 },
 			Column{ .name = "w10", .precision = 3 },
 			Column{ .name = "q", .precision = 3 },
 			Column{ .name = "z", .precision = 7 }
 		},
 		vector<Writers::Surface::DataKind>{
+			SurfaceVector{
+				.vx = us,
+				.vy = vs
+			},
 			SurfaceVector{
 				.vx = currentWindData.current.ua,
 				.vy = currentWindData.current.va
@@ -138,10 +173,7 @@ void Solver::writeData(
 			}
 		},
 		dirs.surface
-	);
-
-	Utils::Data::volumePlusSurface(volume.nx, volume.ny, volume.nz, uf, ua, u);
-	Utils::Data::volumePlusSurface(volume.nx, volume.ny, volume.nz, vf, va, v);
+	);	
 
 	volumeElemWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
@@ -182,6 +214,9 @@ void Solver::solve() {
 	vector<double> u(data.nx * data.ny * data.nz);
 	vector<double> v(data.nx * data.ny * data.nz);
 	vector<double> w(data.nx * data.ny * data.nz);
+
+	vector<double> us(data.nx * data.ny);
+	vector<double> vs(data.nx * data.ny);
 
 	setInitialCondition(
 		data.nx, data.ny, data.nz,
@@ -268,8 +303,8 @@ void Solver::solve() {
 			},
 			data.z,
 			dirs,
-			data.uf, data.ua, u,
-			data.vf, data.va, v,
+			data.uf, data.ua, us, u,
+			data.vf, data.va, vs, v,
 			w, data.nu,
 			surfaceWriter,
 			volumeElemWriter,
@@ -382,8 +417,8 @@ void Solver::solve() {
 					},
 					data.z,
 					dirs,
-					data.uf, data.ua, u,
-					data.vf, data.va, v,
+					data.uf, data.ua, us, u,
+					data.vf, data.va, vs, v,
 					w, data.nu,
 					surfaceWriter,
 					volumeElemWriter,

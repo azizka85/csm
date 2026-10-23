@@ -49,6 +49,17 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 			vector<double>& z
 		);
 
+		void calculateSurfaceCurrent(
+			int nx, int ny, int nz,
+			const VolumeState& volume,
+			const WindStress& windStress,
+			const vector<double>& u,
+			const vector<double>& v,
+			const vector<double>& nu,
+			vector<double>& us,
+			vector<double>& vs
+		);
+
 		void writeData(
 			const TimeState& time,
 			const VolumeState& volume,
@@ -57,9 +68,11 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 			const Directories& dirs,
 			vector<double>& uf,
 			vector<double>& ua,
+			vector<double>& us,
 			vector<double>& u,
 			vector<double>& vf,
 			vector<double>& va,
+			vector<double>& vs,
 			vector<double>& v,
 			vector<double>& w,
 			vector<double>& nu,
