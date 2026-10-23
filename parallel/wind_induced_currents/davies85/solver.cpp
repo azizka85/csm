@@ -17,7 +17,7 @@ using namespace Parallel::WindInducedCurrents::Davies85;
 Solver::Solver(
 	Data& data, 
 	bool calcNU, bool interpolateWind, bool writeOutput,
-	double endTime, double outputTimeStep, string outDir,
+	double tickTime, double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
 ): data(data) {
@@ -26,6 +26,7 @@ Solver::Solver(
 
 	this->writeOutput = writeOutput;
 
+	this->tickTime = tickTime;
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
 	this->outDir = outDir;
@@ -145,11 +146,11 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		SurfaceState{ .nx = nx, .ny = ny, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column{ .name = "vs", .precision = 3},
-			Column{ .name = "va", .precision = 3 },
-			Column{ .name = "w10", .precision = 3 },
-			Column{ .name = "q", .precision = 3 },
-			Column{ .name = "z", .precision = 7 }
+			Column{ .name = "vs", .precision = 9},
+			Column{ .name = "va", .precision = 9 },
+			Column{ .name = "w10", .precision = 9 },
+			Column{ .name = "q", .precision = 9 },
+			Column{ .name = "z", .precision = 18 }
 		},
 		vector<Writers::Surface::DataKind>{
 			SurfaceVector{
@@ -179,7 +180,7 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column{ .name = "v", .precision = 3 }
+			Column{ .name = "v", .precision = 9 }
 		},
 		vector<Writers::Volume::DataKind>{
 			VolumeVector{ .vx = u, .vy = v, .vz = w }
@@ -191,7 +192,7 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz + 1, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column{ .name = "nu", .precision = 3 }
+			Column{ .name = "nu", .precision = 9 }
 		},
 		vector<Writers::Volume::DataKind>{
 			Scalar{
@@ -248,6 +249,7 @@ void Solver::solve() {
 
 	double t = 0;
 	double tn = outputTimeStep;
+	double tt = tickTime;
 
 	double t0 = data.windData[data.currentWindIndex].time;
 	double t1 = data.windData[data.currentWindIndex].time;
@@ -319,6 +321,12 @@ void Solver::solve() {
 	m += 1;
 
 	while (t <= endTime) {
+		if (t >= tt) {
+			cout << format("Time: {:.3f}, dt: {:.5f}, nuMax: {:.5f}", t, dt, nuMax) << endl;
+
+			tt += tickTime;
+		}
+
 		kernel->calcUA(dt);
 		kernel->swapUA();
 
@@ -460,9 +468,9 @@ void Solver::solve() {
 			Writers::Statistics::Column{ .name = "t", .precision = 3 },
 			Writers::Statistics::Column{ .name = "calc_time", .precision = 0 },
 			Writers::Statistics::Column{ .name = "max_res", .precision = 18 },
-			Writers::Statistics::Column{ .name = "umd", .precision = 5 },
-			Writers::Statistics::Column{ .name = "vmd", .precision = 5 },
-			Writers::Statistics::Column{ .name = "zmd", .precision = 19 }
+			Writers::Statistics::Column{ .name = "umd", .precision = 9 },
+			Writers::Statistics::Column{ .name = "vmd", .precision = 9 },
+			Writers::Statistics::Column{ .name = "zmd", .precision = 18 }
 	},
 		statistics,
 		dirs.root

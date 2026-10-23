@@ -81,6 +81,8 @@ CMakeLists.txt.user*
 .uic/
 /build*/
 
+out
+
 # ParaView
 .sessions
 .out

@@ -3,7 +3,7 @@
 #include <calc/time.h>
 
 #include <generators/area/uniform_generator.h>
-#include <generators/dz/triple_point_generator.h>
+#include <generators/dz/uniform_generator.h>
 #include <generators/bathymetry/uniform_generator.h>
 #include <generators/wind/uniform_generator.h>
 #include <generators/viscosity/uniform_generator.h>
@@ -41,14 +41,14 @@ int main() {
 	const double dx = 13;
 	const double dy = 13;
 
-	const double dzMin = 0.002;
+	const double dzMin = 0.02;
 	const double dzMax = 0.1;
 
 	const double zm = 0.51;
 
 	const double ht = 100;
 
-	const double num = 0.01;
+	const double num = 0.05;
 	const double nut = 0.005;
 	const double nu0 = 1.15e-6;
 
@@ -63,8 +63,9 @@ int main() {
 	const double qxm = 0;
 	const double qym = -1.5;
 
+	const double tickTime = 600;
 	const double endTime = 543600;
-	const double outputTimeStep = 12600;
+	const double outputTimeStep = 540000;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n45.5_s42.5_w48.0_e50.0.nc";
 	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n45.5_e50_s42.5_w48.nc";
@@ -92,17 +93,7 @@ int main() {
 				.w = w
 			}
 		);
-		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
-			Generators::DZ::TriplePointGeneratorParams{
-				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
-					Calc::Grid::TriplePointVerticalStepSizeParams{
-						.zm = zm,
-						.dzMin = dzMin,
-						.dzMax = dzMax
-					}
-				)
-			}
-		);
+		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
@@ -160,13 +151,14 @@ int main() {
 		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
 			data, 
 			sources,
-			interpolateWind
+			interpolateWind,
+			1
 		);		
 
 		Davies85::Solver solver(
 			data, 
 			calcNU, interpolateWind, writeOutput,			
-			endTime, outputTimeStep, outDir,
+			tickTime, endTime, outputTimeStep, outDir,
 			timeStep,
 			kernel
 		);
