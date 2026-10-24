@@ -35,8 +35,8 @@ int main() {
 	const double lonMin = 46;
 	const double lonMax = 56;
 
-	double refDepth = -29;
-	double minDepth = 1;
+	double refDepth = -27;
+	double minDepth = 3;
 
 	const double dx = 13;
 	const double dy = 13;
@@ -48,8 +48,8 @@ int main() {
 
 	const double ht = 25;
 
-	const double num = 0.4;
-	const double nut = 0.05;
+	const double num = 0.005;
+	const double nut = 0.4;
 	const double nu0 = 1.15e-6;
 
 	const double w = 260;
