@@ -3,10 +3,10 @@
 #include <calc/time.h>
 
 #include <generators/area/uniform_generator.h>
-#include <generators/dz/uniform_generator.h>
+#include <generators/dz/triple_point_generator.h>
 #include <generators/bathymetry/uniform_generator.h>
 #include <generators/wind/uniform_generator.h>
-#include <generators/viscosity/uniform_generator.h>
+#include <generators/viscosity/linear_generator.h>
 
 #include "double_precision/kernel.h"
 #include "data.h"
@@ -41,15 +41,15 @@ int main() {
 	const double dx = 13;
 	const double dy = 13;
 
-	const double dzMin = 0.02;
+	const double dzMin = 0.002;
 	const double dzMax = 0.1;
 
 	const double zm = 0.51;
 
-	const double ht = 100;
+	const double ht = 25;
 
-	const double num = 0.05;
-	const double nut = 0.005;
+	const double num = 0.4;
+	const double nut = 0.05;
 	const double nu0 = 1.15e-6;
 
 	const double w = 260;
@@ -65,7 +65,7 @@ int main() {
 
 	const double tickTime = 600;
 	const double endTime = 543600;
-	const double outputTimeStep = 540000;
+	const double outputTimeStep = 12600;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n45.5_s42.5_w48.0_e50.0.nc";
 	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n45.5_e50_s42.5_w48.nc";
@@ -93,7 +93,17 @@ int main() {
 				.w = w
 			}
 		);
-		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
+		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
+			Generators::DZ::TriplePointGeneratorParams{
+				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
+					Calc::Grid::TriplePointVerticalStepSizeParams{
+						.zm = zm,
+						.dzMin = dzMin,
+						.dzMax = dzMax
+					}
+				)
+			}
+		);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 
@@ -112,7 +122,13 @@ int main() {
 
 		PhysicalParams phys{ .rho = rho, .f = f };
 		
-		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);		
+		auto nuGenerator = make_shared<Generators::Viscosity::LinearGenerator>(
+			ht, 
+			Calc::Turbulence::ViscosityState{
+				.nut = nut,
+				.nus = num
+			}
+		);		
 
 		auto data = Davies85::Data(
 			g, kb, k0, k, sigma, nu0,

@@ -1005,7 +1005,7 @@ void Solver::solve() {
 			Utils::Data::updateData(nx, ny, nz, vp, vf);
 
 			m += 1;
-			tn = t + outputTimeStep;
+			tn += outputTimeStep;
 
 			start = high_resolution_clock::now();
 		}

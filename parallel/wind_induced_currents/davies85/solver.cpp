@@ -456,7 +456,7 @@ void Solver::solve() {
 			zp = data.z;
 
 			m += 1;
-			tn = t + outputTimeStep;
+			tn += outputTimeStep;
 
 			start = high_resolution_clock::now();
 		}
