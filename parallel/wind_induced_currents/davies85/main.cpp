@@ -36,7 +36,7 @@ int main() {
 	const double lonMax = 56;
 
 	double refDepth = -29;
-	double minDepth = 5;
+	double minDepth = 1;
 
 	const double dx = 13;
 	const double dy = 13;
