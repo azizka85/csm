@@ -105,8 +105,9 @@ void Solver::calculateSurfaceCurrent(
 		for (int j = 0; j < ny; j++) {
 			int p = j + i * ny;
 			int k = p * nz;
+			int nk = p * (nz + 1);
 
-			double alpha = volume.bathymetry.h[p] * volume.dz[0] / 2 / data.rho / nu[k];
+			double alpha = volume.bathymetry.h[p] * volume.dz[0] / 2 / data.rho / nu[nk];
 
 			us[p] = alpha * windStress.qx[p] + u[k];
 			vs[p] = alpha * windStress.qy[p] + v[k];
@@ -356,7 +357,7 @@ void Solver::solve() {
 		}
 
 		if (interpolateWind) {
-			double alpha = (t1 == t0) ? 0 : (t - t0) / (t1 - t0);
+			double alpha = (t1 == t0) ? 0 : std::clamp((t - t0) / (t1 - t0), 0.0, 1.0);
 
 			kernel->interpolateQUV10(alpha);
 		}

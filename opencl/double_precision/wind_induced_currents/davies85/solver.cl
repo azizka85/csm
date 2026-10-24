@@ -107,57 +107,60 @@ __kernel void wind_induced_currents_davies85_calc_rhs(
 
 		int idb = nz - 1 + p * nz;
 
+		int nid = k + p * (nz + 1);
+		int nidu = k + 1 + p * (nz + 1);
+
 		if (k == 0) {
-			double um1 = uf[id] + h[p] * qx[p] * dz[k] / rho / nu[id];
-			double vm1 = vf[id] + h[p] * qy[p] * dz[k] / rho / nu[id];
+			double um1 = uf[id] + h[p] * qx[p] * dz[k] / rho / nu[nid];
+			double vm1 = vf[id] + h[p] * qy[p] * dz[k] / rho / nu[nid];
 
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[idu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-				nu[id] * (uf[id] - um1) / 2 / dz[k]
+				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
+				nu[nid] * (uf[id] - um1) / 2 / dz[k]
 			) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / rho / h[p]
 			+ dt * qx[p] / rho / h[p] / 2 / dz[k];
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[idu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-				nu[id] * (vf[id] - vm1) / 2 / dz[k]
+				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
+				nu[nid] * (vf[id] - vm1) / 2 / dz[k]
 			) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / rho / h[p]
 			+ dt * qy[p] / rho / h[p] / 2 / dz[k];
 		}
 		else if (k == nz - 1) {
 			double un = (
-				uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[idu]
-				- kb * h[p] * dz[k] * ua[p] / nu[idu]
-			) / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+				uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[nidu]
+				- kb * h[p] * dz[k] * ua[p] / nu[nidu]
+			) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 			double vn = (
-				vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[idu]
-				- kb * h[p] * dz[k] * va[p] / nu[idu]
-			) / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+				vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[nidu]
+				- kb * h[p] * dz[k] * va[p] / nu[nidu]
+			) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[idu] * (un - uf[id]) / 2 / dz[k] -
-				nu[id] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
+				nu[nidu] * (un - uf[id]) / 2 / dz[k] -
+				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / rho / h[p]
-			- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+			- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[idu] * (vn - vf[id]) / 2 / dz[k] -
-				nu[id] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
+				nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
+				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / rho / h[p]
-			- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+			- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 		}
 		else {
 			double u = uf[idb] + ua[p];
 			double v = vf[idb] + va[p];
 
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[idu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-				nu[id] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
+				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
+				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k] + kb * u * dt / h[p] - qx[p] * dt / rho / h[p];
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[idu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-				nu[id] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
+				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
+				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k] + kb * v * dt / h[p] - qy[p] * dt / rho / h[p];
 		}        
     }    
@@ -181,26 +184,28 @@ __kernel void wind_induced_currents_davies85_create_tridiagonal_matrix(
 
     if (h[p] > 0) {
 		int id = k + p * nz;
-		int idu = k + 1 + p * nz;
+		
+		int nid = k + p * (nz + 1);
+		int nidu = k + 1 + p * (nz + 1);
 
 		if (k == 0) {
-			ac[id] = 1 + dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
-			ar[id] = -dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+			ac[id] = 1 + dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+			ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
 		}
 		else if (k == nz - 1) {
-			al[id] = -dt * nu[id] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+			al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
 			ac[id] = 1 + dt * (
-				kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]) / 2 / dz[k] +
-				nu[id] / (dz[k] + dz[k - 1])
+				kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]) / 2 / dz[k] +
+				nu[nid] / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k];
 		}
 		else {
-			al[id] = -dt * nu[id] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+			al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
 			ac[id] = 1 + dt * (
-				nu[idu] / (dz[k + 1] + dz[k]) +
-				nu[id] / (dz[k] + dz[k - 1])
+				nu[nidu] / (dz[k + 1] + dz[k]) +
+				nu[nid] / (dz[k] + dz[k - 1])
 			) / h[p] / h[p] / dz[k];
-			ar[id] = -dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+			ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
 		}
 	}
 }
@@ -284,73 +289,75 @@ __kernel void wind_induced_currents_davies85_calc_z(
 
     int k = j + i*ny;    
 
-    int kr = j + (i + 1)*ny;
-    int kl = j + (i - 1)*ny;
+    if (h[k] > 0) {
+		int kr = j + (i + 1)*ny;
+		int kl = j + (i - 1)*ny;
 
-    int ku = j + 1 + i*ny;  
-    int kd = j - 1 + i*ny;  
+		int ku = j + 1 + i*ny;  
+		int kd = j - 1 + i*ny;  
 
-    if (i == 0) {
-		if (j == 0) {
-			kr = ny;
-			kl = (nx - 1) * ny;
+		if (i == 0) {
+			if (j == 0) {
+				kr = ny;
+				kl = (nx - 1) * ny;
 
-			ku = 1;
-			kd = ny - 1;
+				ku = 1;
+				kd = ny - 1;
+			}
+			else if (j == ny - 1) {
+				kr = ny - 1 + ny;
+				kl = ny - 1 + (nx - 1) * ny;
+
+				ku = 0;
+				kd = ny - 2;
+			}
+			else {
+				kr = j + ny;
+				kl = j + (nx - 1) * ny;
+
+				ku = j + 1;
+				kd = j - 1;
+			}
+		}
+		else if (i == nx - 1) {
+			if (j == 0) {
+				kr = 0;
+				kl = (nx - 2) * ny;
+
+				ku = 1 + (nx - 1) * ny;
+				kd = ny - 1 + (nx - 1) * ny;
+			}
+			else if (j == ny - 1) {
+				kr = ny - 1;
+				kl = ny - 1 + (nx - 2) * ny;
+
+				ku = (nx - 1) * ny;
+				kd = ny - 2 + (nx - 1) * ny;;
+			}
+			else {
+				kr = j;
+				kl = j + (nx - 2) * ny;
+
+				ku = j + 1 + (nx - 1) * ny;
+				kd = j - 1 + (nx - 1) * ny;
+			}
+		}
+		else if (j == 0) {
+			kr = (i + 1) * ny;
+			kl = (i - 1) * ny;
+
+			ku = 1 + i * ny;
+			kd = ny - 1 + i * ny;
 		}
 		else if (j == ny - 1) {
-			kr = ny - 1 + ny;
-			kl = ny - 1 + (nx - 1) * ny;
+			kr = ny - 1 + (i + 1) * ny;
+			kl = ny - 1 + (i - 1) * ny;
 
-			ku = 0;
-			kd = ny - 2;
+			ku = i * ny;
+			kd = ny - 2 + i * ny;
 		}
-		else {
-			kr = j + ny;
-			kl = j + (nx - 1) * ny;
-
-			ku = j + 1;
-			kd = j - 1;
-		}
-	}
-	else if (i == nx - 1) {
-		if (j == 0) {
-			kr = 0;
-			kl = (nx - 2) * ny;
-
-			ku = 1 + (nx - 1) * ny;
-			kd = ny - 1 + (nx - 1) * ny;
-		}
-		else if (j == ny - 1) {
-			kr = ny - 1;
-			kl = ny - 1 + (nx - 2) * ny;
-
-			ku = (nx - 1) * ny;
-			kd = ny - 2 + (nx - 1) * ny;;
-		}
-		else {
-			kr = j;
-			kl = j + (nx - 2) * ny;
-
-			ku = j + 1 + (nx - 1) * ny;
-			kd = j - 1 + (nx - 1) * ny;
-		}
-	}
-	else if (j == 0) {
-		kr = (i + 1) * ny;
-		kl = (i - 1) * ny;
-
-		ku = 1 + i * ny;
-		kd = ny - 1 + i * ny;
-	}
-	else if (j == ny - 1) {
-		kr = ny - 1 + (i + 1) * ny;
-		kl = ny - 1 + (i - 1) * ny;
-
-		ku = i * ny;
-		kd = ny - 2 + i * ny;
-	}
     
-    z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
-	z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
+		z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
+		z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;    
+    }
 }

@@ -65,12 +65,14 @@ Kernel::Kernel(
 	err = queue.enqueueWriteBuffer(bufferUA, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, uaF.data());
 
 	bufferU1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferUA, bufferU1A, 0, 0, sizeof(float) * data.nx * data.ny);	
 
 	vector<float> vaF(data.va.begin(), data.va.end());
 	bufferVA = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
 	err = queue.enqueueWriteBuffer(bufferVA, CL_TRUE, 0, sizeof(float) * data.nx * data.ny, vaF.data());
 
 	bufferV1A = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);
+	err = queue.enqueueCopyBuffer(bufferVA, bufferV1A, 0, 0, sizeof(float) * data.nx * data.ny);
 
 	vector<float> zF(data.z.begin(), data.z.end());
 	bufferZ = cl::Buffer(context, CL_MEM_READ_WRITE, sizeof(float) * data.nx * data.ny);

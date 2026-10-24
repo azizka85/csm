@@ -247,57 +247,60 @@ void Solver::calcRHS(
 
 					size_t idb = nz - 1 + p * nz;
 
+					size_t nid = k + p * (nz + 1);
+					size_t nidu = k + 1 + p * (nz + 1);
+
 					if (k == 0) {
-						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[id];
-						double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[id];
+						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[nid];
+						double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[nid];
 
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[idu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-							nu[id] * (uf[id] - um1) / 2 / dz[k]
+							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
+							nu[nid] * (uf[id] - um1) / 2 / dz[k]
 						) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / phys.rho / h[p]
 						+ dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[idu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-							nu[id] * (vf[id] - vm1) / 2 / dz[k]
+							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
+							nu[nid] * (vf[id] - vm1) / 2 / dz[k]
 						) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / phys.rho / h[p]
 						+ dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
 					}
 					else if (k == nz - 1) {
 						double un = (
-							uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[idu]
-							- kb * h[p] * dz[k] * ua[p] / nu[idu]
-						) / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+							uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[nidu]
+							- kb * h[p] * dz[k] * ua[p] / nu[nidu]
+						) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 						double vn = (
-							vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[idu]
-							- kb * h[p] * dz[k] * va[p] / nu[idu]
-						) / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+							vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[nidu]
+							- kb * h[p] * dz[k] * va[p] / nu[nidu]
+						) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[idu] * (un - uf[id]) / 2 / dz[k] -
-							nu[id] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
+							nu[nidu] * (un - uf[id]) / 2 / dz[k] -
+							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / phys.rho / h[p]
-						- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+						- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[idu] * (vn - vf[id]) / 2 / dz[k] -
-							nu[id] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
+							nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
+							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / phys.rho / h[p]
-						- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]);
+						- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 					}
 					else {
 						double u = uf[idb] + ua[p];
 						double v = vf[idb] + va[p];
 
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[idu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-							nu[id] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
+							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
+							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k] + kb * u * dt / h[p] - qx[p] * dt / phys.rho / h[p];
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[idu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-							nu[id] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
+							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
+							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k] + kb * v * dt / h[p] - qy[p] * dt / phys.rho / h[p];
 					}
 				}
@@ -325,24 +328,27 @@ void Solver::createTridiagonalMatrix(
 					size_t id = k + p * nz;
 					size_t idu = k + 1 + p * nz;
 
+					size_t nid = k + p * (nz + 1);
+					size_t nidu = k + 1 + p * (nz + 1);
+
 					if (k == 0) {
-						ac[id] = 1 + dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
-						ar[id] = -dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+						ac[id] = 1 + dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+						ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
 					}
 					else if (k == nz - 1) {
-						al[id] = -dt * nu[id] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+						al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
 						ac[id] = 1 + dt * (
-							kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[idu]) / 2 / dz[k] +
-							nu[id] / (dz[k] + dz[k - 1])
+							kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]) / 2 / dz[k] +
+							nu[nid] / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k];
 					}
 					else {
-						al[id] = -dt * nu[id] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+						al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
 						ac[id] = 1 + dt * (
-							nu[idu] / (dz[k + 1] + dz[k]) +
-							nu[id] / (dz[k] + dz[k - 1])
+							nu[nidu] / (dz[k + 1] + dz[k]) +
+							nu[nid] / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k];
-						ar[id] = -dt * nu[idu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+						ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
 					}
 				}
 			}
@@ -605,8 +611,8 @@ void Solver::writeData(
 		dirs.surface
 	);
 
-	Utils::Data::volumePlusSurface(volume.nx, volume.ny, volume.nz, uf, ua, u);
-	Utils::Data::volumePlusSurface(volume.nx, volume.ny, volume.nz, vf, va, v);
+	Utils::Data::volumePlusSurface(nx, ny, volume.nz, uf, ua, u);
+	Utils::Data::volumePlusSurface(nx, ny, volume.nz, vf, va, v);
 
 	volumeElemWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
@@ -741,7 +747,6 @@ void Solver::solve() {
 	double nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
-	double dtp = dt;
 
 	bool updateDT = false;
 
@@ -895,7 +900,7 @@ void Solver::solve() {
 		}
 
 		if (interpolateWind) {
-			double alpha = (t1 == t0) ? 0 : (t - t0) / (t1 - t0);
+			double alpha = (t1 == t0) ? 0 : std::clamp((t - t0) / (t1 - t0), 0.0, 1.0);
 
 			size_t wi = currentWindIndex;
 			size_t win = currentWindIndex;
@@ -939,9 +944,7 @@ void Solver::solve() {
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
-		if (dt1 < dtp || updateDT) {
-			dtp = dt1;
-
+		if (updateDT) {
 			dt = timeStep->calculate(Time::State{
 				.t = t,
 				.dt = dt1,

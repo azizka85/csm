@@ -167,8 +167,7 @@ int main() {
 		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
 			data, 
 			sources,
-			interpolateWind,
-			1
+			interpolateWind
 		);		
 
 		Davies85::Solver solver(
