@@ -36,7 +36,7 @@ int main() {
 	const double lonMax = 56;
 
 	const double refDepth = -29;
-	const double minDepth = 1;
+	const double minDepth = 3;
 
 	const double dx = 13000;
 	const double dy = 13000;
@@ -64,10 +64,10 @@ int main() {
 	const double qym = 1.5;
 
 	const double tickTime = 600;
-	const double endTime = 90000;
-	const double outputTimeStep = 600;
+	const double endTime = 86400;
+	const double outputTimeStep = 3600;
 
-	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
+	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47_s36_w46_e56.nc";
 	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
 
 	const string outDir = "out";
@@ -151,7 +151,7 @@ int main() {
 		);		
 
 		auto data = Davies85::Data(
-			g, kb, k0, k, sigma, num,
+			g, kb, k0, k, sigma, nu0,
 			phys,
 			dx, dy, symmetrise,
 			areaGenerator,

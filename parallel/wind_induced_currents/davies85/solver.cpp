@@ -321,26 +321,31 @@ void Solver::solve() {
 
 	m += 1;
 
-	while (t <= endTime) {
+	while (t < endTime - 1e-9) {
+		double dtStep = std::min(dt, tn - t);
+
 		if (t >= tt) {
 			cout << format("Time: {:.3f}, dt: {:.5f}, nuMax: {:.5f}", t, dt, nuMax) << endl;
 
 			tt += tickTime;
 		}
 
-		kernel->calcUA(dt);
+		kernel->calcUA(dtStep);
 		kernel->swapUA();
 
-		kernel->calcVA(dt);
+		kernel->calcVA(dtStep);
 		kernel->swapVA();
 
-		kernel->calcRHS(dt);
-		kernel->createTridiagonalMatrix(dt);
+		kernel->calcRHS(dtStep);
+		kernel->createTridiagonalMatrix(dtStep);
 		kernel->calcUVF();
 
-		kernel->calcZ(dt);
+		kernel->calcZ(dtStep);
 
-		t += dt;
+		t += dtStep;
+
+		if (std::abs(t - tn) < 1e-9) t = tn;
+
 		n += 1;
 
 		if (data.currentWindIndex + 1 < data.windData.size() && t >= data.windData[data.currentWindIndex + 1].time) {
