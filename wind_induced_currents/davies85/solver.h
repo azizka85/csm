@@ -132,6 +132,7 @@ namespace WindInducedCurrents::Davies85 {
 		void calcUVF(
 			size_t nx, size_t ny, size_t nz,
 			vector<double>& h,
+			vector<double>& dz,
 			vector<double>& al,
 			vector<double>& ac,
 			vector<double>& ar,

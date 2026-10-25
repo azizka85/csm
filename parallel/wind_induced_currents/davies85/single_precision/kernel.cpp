@@ -237,13 +237,14 @@ Kernel::Kernel(
 	calcUVFKernel.setArg(0, (int)data.ny);
 	calcUVFKernel.setArg(1, (int)data.nz);
 	calcUVFKernel.setArg(2, bufferH);
-	calcUVFKernel.setArg(3, bufferAL);
-	calcUVFKernel.setArg(4, bufferAC);
-	calcUVFKernel.setArg(5, bufferAR);
-	calcUVFKernel.setArg(6, bufferUF);
-	calcUVFKernel.setArg(7, bufferVF);
-	calcUVFKernel.setArg(8, bufferUD);
-	calcUVFKernel.setArg(9, bufferVD);
+	calcUVFKernel.setArg(3, bufferDZ);
+	calcUVFKernel.setArg(4, bufferAL);
+	calcUVFKernel.setArg(5, bufferAC);
+	calcUVFKernel.setArg(6, bufferAR);
+	calcUVFKernel.setArg(7, bufferUF);
+	calcUVFKernel.setArg(8, bufferVF);
+	calcUVFKernel.setArg(9, bufferUD);
+	calcUVFKernel.setArg(10, bufferVD);
 
 	calcResidualKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_residual");
 

@@ -241,6 +241,7 @@ __kernel void wind_induced_currents_davies85_create_tridiagonal_matrix(
 __kernel void wind_induced_currents_davies85_calc_uvf(
     int ny, int nz,
 	__global const double* h,
+	__global const double* dz,
     __global const double* al,
     __global const double* ac,
     __global const double* ar,
@@ -267,7 +268,23 @@ __kernel void wind_induced_currents_davies85_calc_uvf(
             nz,             
             al + shift, ac + shift, ar + shift, 
             vd + shift, vf + shift
-        );        
+        );    
+		
+		double mu = 0, mv = 0, s = 0;
+
+		for (int l = 0; l < nz; l++) {
+            mu += dz[l] * uf[shift + l];
+            mv += dz[l] * vf[shift + l];
+            s  += dz[l];
+        }
+
+		mu /= s;
+        mv /= s;
+
+		for (int l = 0; l < nz; l++) {
+            uf[shift + l] -= mu;
+            vf[shift + l] -= mv;
+        }
     }    
 }
 

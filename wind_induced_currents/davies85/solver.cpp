@@ -387,6 +387,7 @@ void Solver::createTridiagonalMatrix(
 void Solver::calcUVF(
 	size_t nx, size_t ny, size_t nz,
 	vector<double>& h, 
+	vector<double>& dz,
 	vector<double>& al, 
 	vector<double>& ac, 
 	vector<double>& ar, 
@@ -421,6 +422,22 @@ void Solver::calcUVF(
 						.d = span<double>(vd.data() + k * nz, nz),
 					}
 				);
+
+				double mu = 0, mv = 0, s = 0;
+
+				for (size_t l = 0; l < nz; l++) {
+					mu += dz[l] * uf[k*nz + l];
+					mv += dz[l] * vf[k*nz + l];
+					s += dz[l];
+				}
+
+				mu /= s;
+				mv /= s;
+
+				for (size_t l = 0; l < nz; l++) {
+					uf[k*nz + l] -= mu;
+					vf[k*nz + l] -= mv;
+				}
 			}
 		}
 	}
@@ -902,7 +919,7 @@ void Solver::solve() {
 
 		calcUVF(
 			nx, ny, nz, 
-			bathymetry.h, 
+			bathymetry.h, dz,
 			al, ac, ar,
 			uf, vf,
 			ud, vd
