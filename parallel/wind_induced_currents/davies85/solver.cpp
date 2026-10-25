@@ -211,7 +211,8 @@ void Solver::solve() {
 
 	double dzMin = *min_element(data.dz.begin(), data.dz.end());
 
-	const double dtMax = min(data.dx, data.dy) / sqrt(2 * data.g * hMax) / 1.5;	
+	const double dtCFL = min(data.dx, data.dy) / sqrt(2 * data.g * hMax) / 1.5;
+	const double dtMax = outputTimeStep / std::ceil(outputTimeStep / dtCFL);
 
 	vector<double> u(data.nx * data.ny * data.nz);
 	vector<double> v(data.nx * data.ny * data.nz);
@@ -358,7 +359,7 @@ void Solver::solve() {
 				t1 = data.windData[data.currentWindIndex + 1].time;
 			}
 
-			updateDT = true;
+			updateDT = !interpolateWind;
 		}
 
 		if (interpolateWind) {
