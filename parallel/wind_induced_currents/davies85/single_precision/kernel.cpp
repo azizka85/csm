@@ -170,12 +170,14 @@ Kernel::Kernel(
 	calcUAKernel.setArg(7, (int)data.ny);
 	calcUAKernel.setArg(8, (int)data.nz);
 	calcUAKernel.setArg(9, bufferH);
-	calcUAKernel.setArg(10, bufferQX);
-	calcUAKernel.setArg(11, bufferUA);
-	calcUAKernel.setArg(12, bufferVA);
-	calcUAKernel.setArg(13, bufferZ);
-	calcUAKernel.setArg(14, bufferUF);
-	calcUAKernel.setArg(15, bufferU1A);
+	calcUAKernel.setArg(10, bufferDZ);
+	calcUAKernel.setArg(11, bufferQX);
+	calcUAKernel.setArg(12, bufferUA);
+	calcUAKernel.setArg(13, bufferVA);
+	calcUAKernel.setArg(14, bufferZ);
+	calcUAKernel.setArg(15, bufferUF);
+	calcUAKernel.setArg(16, bufferNU);
+	calcUAKernel.setArg(17, bufferU1A);
 
 	calcVAKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_va");
 
@@ -188,12 +190,14 @@ Kernel::Kernel(
 	calcVAKernel.setArg(7, (int)data.ny);
 	calcVAKernel.setArg(8, (int)data.nz);
 	calcVAKernel.setArg(9, bufferH);
-	calcVAKernel.setArg(10, bufferQY);
-	calcVAKernel.setArg(11, bufferUA);
-	calcVAKernel.setArg(12, bufferVA);
-	calcVAKernel.setArg(13, bufferZ);
-	calcVAKernel.setArg(14, bufferVF);
-	calcVAKernel.setArg(15, bufferV1A);
+	calcVAKernel.setArg(10, bufferDZ);
+	calcVAKernel.setArg(11, bufferQY);
+	calcVAKernel.setArg(12, bufferUA);
+	calcVAKernel.setArg(13, bufferVA);
+	calcVAKernel.setArg(14, bufferZ);
+	calcVAKernel.setArg(15, bufferVF);
+	calcVAKernel.setArg(16, bufferNU);
+	calcVAKernel.setArg(17, bufferV1A);
 
 	calcRHSKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs");
 
@@ -351,18 +355,18 @@ void Kernel::printDeviceDescription(cl::Platform& platform, cl::Device& device) 
 
 void Kernel::calcUA(double dt) {
 	calcUAKernel.setArg(5, (float)dt);
-	calcUAKernel.setArg(11, bufferUA);
-	calcUAKernel.setArg(12, bufferVA);
-	calcUAKernel.setArg(15, bufferU1A);
+	calcUAKernel.setArg(12, bufferUA);
+	calcUAKernel.setArg(13, bufferVA);
+	calcUAKernel.setArg(17, bufferU1A);
 
 	auto err = queue.enqueueNDRangeKernel(calcUAKernel, cl::NullRange, surfaceRange, cl::NullRange);	
 }
 
 void Kernel::calcVA(double dt) {
 	calcVAKernel.setArg(5, (float)dt);
-	calcVAKernel.setArg(11, bufferUA);
-	calcVAKernel.setArg(12, bufferVA);
-	calcVAKernel.setArg(15, bufferV1A);
+	calcVAKernel.setArg(12, bufferUA);
+	calcVAKernel.setArg(13, bufferVA);
+	calcVAKernel.setArg(17, bufferV1A);
 
 	auto err = queue.enqueueNDRangeKernel(calcVAKernel, cl::NullRange, surfaceRange, cl::NullRange);
 }

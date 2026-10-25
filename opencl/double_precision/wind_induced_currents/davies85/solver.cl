@@ -3,11 +3,13 @@ __kernel void wind_induced_currents_davies85_calc_ua(
     double dx, double dt,
     int nx, int ny, int nz,
     __global const double* h,
+	__global const double* dz,
     __global const double* qx,
     __global const double* ua,
     __global const double* va,
     __global const double* z,
     __global const double* uf,
+	__global const double* nu,
     __global double* u1a
 ) {
     int i = get_global_id(0);
@@ -17,7 +19,12 @@ __kernel void wind_induced_currents_davies85_calc_ua(
     int idx = nz - 1 + nz*k;
 
     if (h[k] > 0) {
-		u1a[k] = ua[k] + f * va[k] * dt - kb * dt * (uf[idx] + ua[k]) / h[k] + qx[k] * dt / rho / h[k];
+		int nb = nz + k*(nz + 1);
+
+		double ab = kb*h[k]*dz[nz - 1]/2/nu[nb];
+		double ub = (uf[idx] + ua[k])/(1 + ab);
+
+		u1a[k] = ua[k] + f * va[k] * dt - kb * dt * ub / h[k] + qx[k] * dt / rho / h[k];
 
 		int kr = k;
 		int kl = k;
@@ -47,11 +54,13 @@ __kernel void wind_induced_currents_davies85_calc_va(
     double dy, double dt,
     int nx, int ny, int nz,
     __global const double* h,
+	__global const double* dz,
     __global const double* qy,
     __global const double* ua,
     __global const double* va,
     __global const double* z,
     __global const double* vf,
+	__global const double* nu,
     __global double* v1a
 ) {
     int i = get_global_id(0);
@@ -61,7 +70,12 @@ __kernel void wind_induced_currents_davies85_calc_va(
     int idx = nz - 1 + nz*k;
 
     if (h[k] > 0) {
-		v1a[k] = va[k] - f * ua[k] * dt - kb * dt * (vf[idx] + va[k]) / h[k] + qy[k] * dt / rho / h[k];
+		int nb = nz + k*(nz + 1);
+
+		double ab = kb*h[k]*dz[nz - 1]/2/nu[nb];
+		double vb = (vf[idx] + va[k])/(1 + ab);
+
+		v1a[k] = va[k] - f * ua[k] * dt - kb * dt * vb / h[k] + qy[k] * dt / rho / h[k];
 
 		int ku = k;
 		int kd = k;
@@ -110,12 +124,19 @@ __kernel void wind_induced_currents_davies85_calc_rhs(
     int p = j + i*ny;
 
     if (h[p] > 0) {
-        int id = k + p * nz;
+		int id = k + p * nz;
 
 		int idu = k + 1 + p * nz;
 		int idd = k - 1 + p * nz;
 
 		int idb = nz - 1 + p * nz;
+
+		int nb = nz + p*(nz + 1);
+
+		double ab = kb*h[p]*dz[nz - 1]/2/nu[nb];
+
+		double ub = (uf[idb] + ua[p])/(1 + ab);
+		double vb = (vf[idb] + va[p])/(1 + ab);
 
 		int nid = k + p * (nz + 1);
 		int nidu = k + 1 + p * (nz + 1);
@@ -127,13 +148,13 @@ __kernel void wind_induced_currents_davies85_calc_rhs(
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
 				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
 				nu[nid] * (uf[id] - um1) / 2 / dz[k]
-			) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / rho / h[p]
+			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p]
 			+ dt * qx[p] / rho / h[p] / 2 / dz[k];
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
 				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
 				nu[nid] * (vf[id] - vm1) / 2 / dz[k]
-			) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / rho / h[p]
+			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p]
 			+ dt * qy[p] / rho / h[p] / 2 / dz[k];
 		}
 		else if (k == nz - 1) {
@@ -150,28 +171,25 @@ __kernel void wind_induced_currents_davies85_calc_rhs(
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
 				nu[nidu] * (un - uf[id]) / 2 / dz[k] -
 				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / rho / h[p]
+			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p]
 			- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
 				nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
 				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / rho / h[p]
+			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p]
 			- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 		}
 		else {
-			double u = uf[idb] + ua[p];
-			double v = vf[idb] + va[p];
-
 			ud[id] = uf[id] + f * vf[id] * dt + dt * (
 				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
 				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * u * dt / h[p] - qx[p] * dt / rho / h[p];
+			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p];
 
 			vd[id] = vf[id] - f * uf[id] * dt + dt * (
 				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
 				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * v * dt / h[p] - qy[p] * dt / rho / h[p];
+			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p];
 		}        
     }    
 }

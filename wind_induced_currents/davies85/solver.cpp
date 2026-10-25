@@ -139,11 +139,13 @@ void Solver::calcUA(
 	double kb, double g, 
 	double dx, double dt, 
 	vector<double>& h, 
+	vector<double>& dz,
 	vector<double>& qx, 
 	vector<double>& ua, 
 	vector<double>& va, 
 	vector<double>& z, 
-	vector<double>& uf, 
+	vector<double>& uf,
+	vector<double>& nu,
 	vector<double>& u1a
 ) {
 	for (size_t i = 0; i < nx; i++) {
@@ -152,7 +154,12 @@ void Solver::calcUA(
 			size_t idx = nz - 1 + nz * k;
 
 			if (h[k] > 0) {
-				u1a[k] = ua[k] + phys.f * va[k] * dt - kb * dt * (uf[idx] + ua[k]) / h[k] + qx[k] * dt / phys.rho / h[k];
+				size_t nb = nz + k * (nz + 1);
+
+				double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
+				double ub = (uf[idx] + ua[k]) / (1 + ab);
+
+				u1a[k] = ua[k] + phys.f * va[k] * dt - kb * dt * ub / h[k] + qx[k] * dt / phys.rho / h[k];
 
 				size_t kr = k;
 				size_t kl = k;
@@ -185,11 +192,13 @@ void Solver::calcVA(
 	double kb, double g, 
 	double dy, double dt, 
 	vector<double>& h, 
+	vector<double>& dz,
 	vector<double>& qy, 
 	vector<double>& ua, 
 	vector<double>& va, 
 	vector<double>& z, 
 	vector<double>& vf, 
+	vector<double>& nu,
 	vector<double>& v1a
 ) {
 	for (size_t i = 0; i < nx; i++) {
@@ -198,7 +207,12 @@ void Solver::calcVA(
 			size_t idx = nz - 1 + nz * k;
 
 			if (h[k] > 0) {
-				v1a[k] = va[k] - phys.f * ua[k] * dt - kb * dt * (vf[idx] + va[k]) / h[k] + qy[k] * dt / phys.rho / h[k];
+				size_t nb = nz + k * (nz + 1);
+
+				double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
+				double vb = (vf[idx] + va[k]) / (1 + ab);
+
+				v1a[k] = va[k] - phys.f * ua[k] * dt - kb * dt * vb / h[k] + qy[k] * dt / phys.rho / h[k];
 
 				size_t ku = k;
 				size_t kd = k;
@@ -257,6 +271,13 @@ void Solver::calcRHS(
 
 					size_t idb = nz - 1 + p * nz;
 
+					size_t nb = nz + p * (nz + 1);
+
+					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
+
+					double ub = (uf[idb] + ua[p]) / (1 + ab);
+					double vb = (vf[idb] + va[p]) / (1 + ab);
+
 					size_t nid = k + p * (nz + 1);
 					size_t nidu = k + 1 + p * (nz + 1);
 
@@ -267,13 +288,13 @@ void Solver::calcRHS(
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
 							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
 							nu[nid] * (uf[id] - um1) / 2 / dz[k]
-						) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / phys.rho / h[p]
+						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p]
 						+ dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
 							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
 							nu[nid] * (vf[id] - vm1) / 2 / dz[k]
-						) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / phys.rho / h[p]
+						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p]
 						+ dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
 					}
 					else if (k == nz - 1) {
@@ -290,28 +311,25 @@ void Solver::calcRHS(
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
 							nu[nidu] * (un - uf[id]) / 2 / dz[k] -
 							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * (uf[idb] + ua[p]) * dt / h[p] - qx[p] * dt / phys.rho / h[p]
+						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p]
 						- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
 							nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
 							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * (vf[idb] + va[p]) * dt / h[p] - qy[p] * dt / phys.rho / h[p]
+						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p]
 						- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
 					}
-					else {
-						double u = uf[idb] + ua[p];
-						double v = vf[idb] + va[p];
-
+					else {						
 						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
 							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
 							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * u * dt / h[p] - qx[p] * dt / phys.rho / h[p];
+						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p];
 
 						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
 							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
 							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * v * dt / h[p] - qy[p] * dt / phys.rho / h[p];
+						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p];
 					}
 				}
 			}					
@@ -840,10 +858,10 @@ void Solver::solve() {
 		calcUA(
 			nx, ny, nz,
 			phys, kb, g,
-			dx, dtStep, bathymetry.h,
+			dx, dtStep, bathymetry.h, dz,
 			windStress.qx,
 			ua, va, z, 
-			uf, u1a
+			uf, nu, u1a
 		);
 
 		swap(ua, u1a);
@@ -851,10 +869,10 @@ void Solver::solve() {
 		calcVA(
 			nx, ny, nz,
 			phys, kb, g,
-			dy, dtStep, bathymetry.h,
+			dy, dtStep, bathymetry.h, dz,
 			windStress.qy,
 			ua, va, z,
-			vf, v1a
+			vf, nu, v1a
 		);
 
 		swap(va, v1a);

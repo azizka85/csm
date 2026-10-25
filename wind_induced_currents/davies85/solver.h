@@ -73,11 +73,13 @@ namespace WindInducedCurrents::Davies85 {
 			double kb, double g, 
 			double dx, double dt, 
 			vector<double>& h,
+			vector<double>& dz,
 			vector<double>& qx,
 			vector<double>& ua,
 			vector<double>& va,
 			vector<double>& z,
 			vector<double>& uf,
+			vector<double>& nu,
 			vector<double>& u1a
 		);
 
@@ -87,11 +89,13 @@ namespace WindInducedCurrents::Davies85 {
 			double kb, double g,
 			double dy, double dt,
 			vector<double>& h,
+			vector<double>& dz,
 			vector<double>& qy,
 			vector<double>& ua,
 			vector<double>& va,
 			vector<double>& z,
 			vector<double>& vf,
+			vector<double>& nu,
 			vector<double>& v1a
 		);
 
