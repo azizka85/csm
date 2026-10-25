@@ -168,7 +168,12 @@ void Solver::calcUA(
 					kl = j + (i - 1) * ny;
 				}
 
-				u1a[k] -= g * dt * (z[kr] - z[kl]) / 2 / dx;
+				double gx = (phys.f * va[k] + qx[k] / phys.rho / h[k]) / g;
+
+				double zr = (h[kr] > 0) ? z[kr] : z[k] + dx * gx;
+				double zl = (h[kl] > 0) ? z[kl] : z[k] - dx * gx;
+
+				u1a[k] -= g * dt * (zr - zl) / 2 / dx;
 			}
 		}
 	}
@@ -210,7 +215,12 @@ void Solver::calcVA(
 					kd = j - 1 + i * ny;					
 				}
 
-				v1a[k] -= g * dt * (z[ku] - z[kd]) / 2 / dy;
+				double gy = (-phys.f * ua[k] + qy[k] / phys.rho / h[k]) / g;
+
+				double zu = (h[ku] > 0) ? z[ku] : z[k] + dy * gy;
+				double zd = (h[kd] > 0) ? z[kd] : z[k] - dy * gy;
+
+				v1a[k] -= g * dt * (zu - zd) / 2 / dy;
 			}
 		}
 	}
@@ -478,8 +488,13 @@ void Solver::calcZ(
 					kd = ny - 2 + i * ny;
 				}
 
-				z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
-				z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;
+				double qr = (h[kr] > 0) ? h[kr] * ua[kr] : -h[k] * ua[k];
+				double ql = (h[kl] > 0) ? h[kl] * ua[kl] : -h[k] * ua[k];
+				double qu = (h[ku] > 0) ? h[ku] * va[ku] : -h[k] * va[k];
+				double qd = (h[kd] > 0) ? h[kd] * va[kd] : -h[k] * va[k];
+
+				z[k] -= dt * (qr - ql) / 2 / dx;
+				z[k] -= dt * (qu - qd) / 2 / dy;
 			}
 		}
 	}
@@ -586,10 +601,10 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		SurfaceState{ .nx = nx, .ny = ny, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column {.name = "va", .precision = 3 },
-			Column {.name = "w10", .precision = 3 },
-			Column {.name = "q", .precision = 3 },
-			Column {.name = "z", .precision = 7 }
+			Column {.name = "va", .precision = 9 },
+			Column {.name = "w10", .precision = 9 },
+			Column {.name = "q", .precision = 9 },
+			Column {.name = "z", .precision = 18 }
 		},
 		vector<Writers::Surface::DataKind>{
 			SurfaceVector {
@@ -618,7 +633,7 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column {.name = "v", .precision = 3 }
+			Column {.name = "v", .precision = 9 }
 		},
 		vector<Writers::Volume::DataKind>{
 			VolumeVector {.vx = u, .vy = v, .vz = w }
@@ -630,7 +645,7 @@ void Solver::writeData(
 		TimeState{ .m = time.m, .t = time.t },
 		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz + 1, .dz = volume.dz, .bathymetry = volume.bathymetry },
 		vector<Column>{
-			Column {.name = "nu", .precision = 3 }
+			Column {.name = "nu", .precision = 9 }
 		},
 		vector<Writers::Volume::DataKind>{
 			Scalar{
@@ -664,7 +679,7 @@ void Solver::solve() {
 
 	auto [hMin, hMax] = Utils::Bathymetry::minMaxH(bathymetry.h, nx, ny);
 
-	auto windData = qGenerator->generate(nx, ny);
+	auto windData = qGenerator->generate(nx, ny, dx, dy);
 
 	if (symmetrise) {
 		bathymetry.h = Utils::Data::symmetrise(nx, ny, bathymetry.h);
@@ -818,11 +833,13 @@ void Solver::solve() {
 
 	m += 1;
 
-	while (t <= endTime) {
+	while (t < endTime - 1e-9) {
+		double dtStep = std::min(dt, tn - t);
+
 		calcUA(
 			nx, ny, nz,
 			phys, kb, g,
-			dx, dt, bathymetry.h,
+			dx, dtStep, bathymetry.h,
 			windStress.qx,
 			ua, va, z, 
 			uf, u1a
@@ -833,7 +850,7 @@ void Solver::solve() {
 		calcVA(
 			nx, ny, nz,
 			phys, kb, g,
-			dy, dt, bathymetry.h,
+			dy, dtStep, bathymetry.h,
 			windStress.qy,
 			ua, va, z,
 			vf, v1a
@@ -846,7 +863,7 @@ void Solver::solve() {
 		calcRHS(
 			nx, ny, nz, 
 			phys, kb,
-			dx, dy, dt,
+			dx, dy, dtStep,
 			dz, bathymetry.h,
 			nu, 
 			windStress.qx, windStress.qy,
@@ -858,7 +875,7 @@ void Solver::solve() {
 		vdt = vd;
 
 		createTridiagonalMatrix(
-			kb, dt, 
+			kb, dtStep, 
 			nx, ny, nz,
 			dz, bathymetry.h, nu, 
 			al, ac, ar
@@ -874,12 +891,15 @@ void Solver::solve() {
 
 		calcZ(
 			nx, ny, nz, 
-			dt, dx, dy,
+			dtStep, dx, dy,
 			bathymetry.h, 
 			ua, va, z
 		);
 
-		t += dt;
+		t += dtStep;
+
+		if (std::abs(t - tn) < 1e-9) t = tn;
+
 		n += 1;
 
 		if (currentWindIndex + 1 < windData.size() && t >= windData[currentWindIndex + 1].time) {

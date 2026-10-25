@@ -65,7 +65,7 @@ TEST_CASE("Test viscosity wind speed generator generate") {
 		}
 	);
 
-	auto windData = qGenerator.generate(nx, ny)[0];
+	auto windData = qGenerator.generate(nx, ny, 1, 1)[0];
 
 	vector<double> ua(nx * ny, 0.5);
 	vector<double> va(nx * ny, 0);

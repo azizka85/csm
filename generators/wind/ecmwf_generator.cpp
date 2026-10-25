@@ -35,7 +35,7 @@ ECMWFGenerator::ECMWFGenerator(ECMWFGeneratorParams params) {
 	this->params = move(params);
 }
 
-path Generators::Wind::ECMWFGenerator::addDirectory(path outDir) {
+path ECMWFGenerator::addDirectory(path outDir) {
     auto attr = params.dirAttr.empty() ? "wind, ECMWF" : params.dirAttr;
 
 	auto& bound = params.bound;
@@ -50,7 +50,7 @@ path Generators::Wind::ECMWFGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<Data::Wind> Generators::Wind::ECMWFGenerator::generate(size_t nx, size_t ny) {
+vector<Data::Wind> ECMWFGenerator::generate(size_t nx, size_t ny, double dx, double dy) {
 	::Utils::Checks::Area::checkNumElemNodes(nx, ny);
 
     NcFile windFile(params.filePath.string(), NcFile::read);
@@ -88,32 +88,31 @@ vector<Data::Wind> Generators::Wind::ECMWFGenerator::generate(size_t nx, size_t 
 
     v10Var.getVar(v10Arr.data());
 
-    auto bound = Utils::toCartesian(params.bound);
+    auto flipRows = [&](const double* src) {
+        vector<double> out(latSize * lonSize);
 
-    double dx = (bound.maxX - bound.minX) / (nx - 1);
-    double dy = (bound.maxY - bound.minY) / (ny - 1);  
+        for (size_t r = 0; r < latSize; r++) {
+            copy(src + (latSize - 1 - r) * lonSize,
+                src + (latSize - r) * lonSize,
+                out.begin() + r * lonSize);
+        }            
+
+        return out;
+    };
+
+    auto bound = Utils::toCartesian(params.bound);
 
     vector<Data::Wind> res(timeSize);
 
     for (int k = 0; k < timeSize; k++) {
-        double* u10SlicePtr = u10Arr.data() + k * latSize * lonSize;
-        span<double> u10SliceSpan(u10SlicePtr, latSize * lonSize);
-
         auto u10Func = bilinear_uniform(
-            move(u10SliceSpan),
-            latSize, lonSize,
-            lonStep, latStep,
-            lons.front(), lats.back()
+            flipRows(u10Arr.data() + k * latSize * lonSize),
+            latSize, lonSize, lonStep, latStep, lons.front(), lats.back()
         );
 
-        double* v10SlicePtr = v10Arr.data() + k * latSize * lonSize;
-        span<double> v10SliceSpan(v10SlicePtr, latSize * lonSize);
-
         auto v10Func = bilinear_uniform(
-            move(v10SliceSpan),
-            latSize, lonSize,
-            lonStep, latStep,
-            lons.front(), lats.back()
+            flipRows(v10Arr.data() + k * latSize * lonSize),
+            latSize, lonSize, lonStep, latStep, lons.front(), lats.back()
         );
 
         vector<double> u10(nx * ny);

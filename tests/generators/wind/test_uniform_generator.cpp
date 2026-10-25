@@ -19,7 +19,7 @@ TEST_CASE("Test wind uniform generator generate") {
 	size_t nx = 11;
 	size_t ny = 11;
 
-	auto data = generator.generate(nx, ny);
+	auto data = generator.generate(nx, ny, 1, 1);
 
 	CHECK_EQ(data.size(), 1);
 

@@ -25,7 +25,7 @@ namespace Generators::Wind {
 			ECMWFGenerator(ECMWFGeneratorParams params);
 
 			path addDirectory(path outDir) override;
-			vector<Data::Wind> generate(size_t nx, size_t ny) override;
+			vector<Data::Wind> generate(size_t nx, size_t ny, double dx, double dy) override;
 	};
 }
 

@@ -33,7 +33,12 @@ __kernel void wind_induced_currents_davies85_calc_ua(
 			kl = j + (i - 1) * ny;
 		}
 
-		u1a[k] -= g * dt * (z[kr] - z[kl]) / 2 / dx;
+		float gx = (f * va[k] + qx[k] / rho / h[k]) / g;
+
+		float zr = (h[kr] > 0) ? z[kr] : z[k] + dx * gx;
+		float zl = (h[kl] > 0) ? z[kl] : z[k] - dx * gx;
+
+		u1a[k] -= g * dt * (zr - zl) / 2 / dx;
 	}
 }
 
@@ -73,7 +78,12 @@ __kernel void wind_induced_currents_davies85_calc_va(
 			kd = j - 1 + i * ny;					
 		}
 
-		v1a[k] -= g * dt * (z[ku] - z[kd]) / 2 / dy;
+		float gy = (-f * ua[k] + qy[k] / rho / h[k]) / g;
+
+		float zu = (h[ku] > 0) ? z[ku] : z[k] + dy * gy;
+		float zd = (h[kd] > 0) ? z[kd] : z[k] - dy * gy;
+
+		v1a[k] -= g * dt * (zu - zd) / 2 / dy;
 	}
 }
 
@@ -358,7 +368,12 @@ __kernel void wind_induced_currents_davies85_calc_z(
 			kd = ny - 2 + i * ny;
 		}
     
-		z[k] -= dt * (h[kr] * ua[kr] - h[kl] * ua[kl]) / 2 / dx;
-		z[k] -= dt * (h[ku] * va[ku] - h[kd] * va[kd]) / 2 / dy;    
+		float qr = (h[kr] > 0) ? h[kr] * ua[kr] : -h[k] * ua[k];
+        float ql = (h[kl] > 0) ? h[kl] * ua[kl] : -h[k] * ua[k];
+        float qu = (h[ku] > 0) ? h[ku] * va[ku] : -h[k] * va[k];
+        float qd = (h[kd] > 0) ? h[kd] * va[kd] : -h[k] * va[k];
+
+        z[k] -= dt * (qr - ql) / 2 / dx;
+        z[k] -= dt * (qu - qd) / 2 / dy;    
     }
 }

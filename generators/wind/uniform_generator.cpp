@@ -15,7 +15,7 @@ path UniformGenerator::addDirectory(path outDir) {
 	);
 }
 
-vector<Data::Wind> UniformGenerator::generate(size_t nx, size_t ny) {
+vector<Data::Wind> UniformGenerator::generate(size_t nx, size_t ny, double dx, double dy) {
 	return {
 		Data::Wind {
 			.time = 0,

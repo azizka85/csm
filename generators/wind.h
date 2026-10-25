@@ -13,7 +13,7 @@ namespace Generators::Wind {
 	class IGenerator {
 		public:
 			virtual path addDirectory(path outDir) = 0;
-			virtual vector<Data::Wind> generate(size_t nx, size_t ny) = 0;
+			virtual vector<Data::Wind> generate(size_t nx, size_t ny, double dx, double dy) = 0;
 	};
 }
 

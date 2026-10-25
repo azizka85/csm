@@ -56,7 +56,7 @@ void Davies85::Data::init() {
 
 	bathymetry = hGenerator->generate(nx, ny, dx, dy);
 
-	windData = qGenerator->generate(nx, ny);
+	windData = qGenerator->generate(nx, ny, dx, dy);
 
 	if (symmetrise) {
 		bathymetry.h = Utils::Data::symmetrise(nx, ny, bathymetry.h);		

@@ -38,8 +38,8 @@ int main() {
 	const double refDepth = -29;
 	const double minDepth = 3;
 
-	const double dx = 13000;
-	const double dy = 13000;
+	const double dx = 6500;
+	const double dy = 6500;
 
 	const double dzMin = 0.002;
 	const double dzMax = 0.1;
