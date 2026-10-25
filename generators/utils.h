@@ -8,6 +8,8 @@ using namespace Calc;
 namespace Generators::Utils {
 	Data::CartesianBound toCartesian(Data::GeoBound bound);
 	Data::GeoBound toGeo(Data::CartesianBound bound);
+
+	void utm39Reverse(double x, double y, double& lat, double& lon);
 }
 
 #endif 

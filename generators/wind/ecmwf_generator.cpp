@@ -2,8 +2,6 @@
 
 #include <stdexcept>
 
-#include <GeographicLib/UTMUPS.hpp>
-
 #include <netcdf>
 
 #include <boost/math/interpolators/bilinear_uniform.hpp>
@@ -15,8 +13,6 @@
 #include "../utils.h"
 
 #include "ecmwf_generator.h"
-
-using namespace GeographicLib;
 
 using namespace netCDF;
 
@@ -132,7 +128,7 @@ vector<Data::Wind> ECMWFGenerator::generate(size_t nx, size_t ny, double dx, dou
                 double x = bound.minX + dx * i;
                 double y = bound.minY + dy * j;
 
-                UTMUPS::Reverse(39, true, x, y, lat, lon);
+                Utils::utm39Reverse(x, y, lat, lon);
 
                 double vu10 = 0;
                 double vv10 = 0;

@@ -35,7 +35,7 @@ int main() {
 	const double lonMin = 46;
 	const double lonMax = 56;
 
-	const double refDepth = -29;
+	const double refDepth = -27;
 	const double minDepth = 3;
 
 	const double dx = 6500;
@@ -64,11 +64,11 @@ int main() {
 	const double qym = 1.5;
 
 	const double tickTime = 600;
-	const double endTime = 86400;
-	const double outputTimeStep = 3600;
+	const double endTime = 31536000;
+	const double outputTimeStep = 86400;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47_s36_w46_e56.nc";
-	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
+	const string ecmwfFilePath = "data/wind/ecmwf_2003_n47_e56_s36_w46.nc";
 
 	const string outDir = "out";
 

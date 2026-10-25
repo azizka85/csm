@@ -1,4 +1,5 @@
 #include <GeographicLib/UTMUPS.hpp>
+#include <GeographicLib/TransverseMercator.hpp>
 
 #include "utils.h"
 
@@ -95,4 +96,8 @@ Data::GeoBound Utils::toGeo(Data::CartesianBound bound) {
 		.latMax = *minmaxLat.second,
 		.lonMax = *minmaxLon.second
 	};
+}
+
+void Utils::utm39Reverse(double x, double y, double& lat, double& lon) {
+	GeographicLib::TransverseMercator::UTM().Reverse(51.0, x - 500000.0, y, lat, lon);
 }
