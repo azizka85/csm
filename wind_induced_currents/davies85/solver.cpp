@@ -696,7 +696,8 @@ void Solver::solve() {
 		ny *= 2;
 	}	
 
-	const double dtMax = min(dx, dy) / sqrt(2 * g * hMax) / 1.5;
+	const double dtCFL = min(dx, dy) / sqrt(2 * g * hMax) / 1.5;
+	const double dtMax = outputTimeStep / std::ceil(outputTimeStep / dtCFL);
 
 	vector<double> ua(nx * ny);
 	vector<double> u1a(nx * ny);
@@ -916,7 +917,7 @@ void Solver::solve() {
 				t1 = windData[currentWindIndex + 1].time;
 			}
 
-			updateDT = true;
+			updateDT = !interpolateWind;
 		}
 
 		if (interpolateWind) {
