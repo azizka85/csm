@@ -2,6 +2,12 @@
 
 using namespace Utils;
 
+void Data::shiftIndex(vector<size_t>& v, size_t& i, size_t m) {
+    while (i < v.size() && v[i] < m) {
+        i += 1;
+    }
+}
+
 double Data::maxAbsDifference(int nx, int ny, vector<double>& u, vector<double>& u1) {
     double maxDiff = 0.;
 

@@ -6,6 +6,8 @@
 using namespace std;
 
 namespace Utils::Data {
+    void shiftIndex(vector<size_t>& v, size_t& i, size_t m);
+
     double maxAbsDifference(
         int nx, int ny,
         vector<double>& u,

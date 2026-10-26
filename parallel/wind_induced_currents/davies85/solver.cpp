@@ -17,7 +17,7 @@ using namespace Parallel::WindInducedCurrents::Davies85;
 Solver::Solver(
 	Data& data, 
 	bool calcNU, bool interpolateWind, bool writeOutput,
-	double tickTime, double endTime, double outputTimeStep, string outDir,
+	double tickTime, double endTime, double outputTimeStep, const vector<size_t>& outputWrites, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
 ): data(data) {
@@ -29,6 +29,9 @@ Solver::Solver(
 	this->tickTime = tickTime;
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
+
+	this->outputWrites = outputWrites;
+
 	this->outDir = outDir;
 
 	this->timeStep = timeStep;	
@@ -299,10 +302,16 @@ void Solver::solve() {
 
 	if (interpolateWind && data.currentWindIndex + 1 < data.windData.size()) {
 		t1 = data.windData[data.currentWindIndex + 1].time;		
-	}
+	}	
 
 	size_t n = 1;
 	size_t m = 0;
+
+	size_t l = 0;
+
+	if (writeOutput) {
+		Utils::Data::shiftIndex(outputWrites, l, m);
+	}
 
 	vector<vector<double>> statistics;
 
@@ -337,7 +346,7 @@ void Solver::solve() {
 		.va = data.va
 	};
 
-	if (writeOutput) {
+	if (writeOutput && (outputWrites.size() == 0 || (l < outputWrites.size() && outputWrites[l] == m))) {
 		writeData(
 			TimeState{ .m = m, .t = t },
 			volume,
@@ -467,7 +476,7 @@ void Solver::solve() {
 				kernel->updateQUV10(windSpeed.u10, windSpeed.v10, windStress.qx, windStress.qy);
 			}
 
-			if (writeOutput) {
+			if (writeOutput && (outputWrites.size() == 0 || (l < outputWrites.size() && outputWrites[l] == m))) {
 				writeData(
 					TimeState{ .m = m, .t = t },
 					volume,
@@ -511,6 +520,10 @@ void Solver::solve() {
 
 			m += 1;
 			tn += outputTimeStep;
+
+			if (writeOutput) {
+				Utils::Data::shiftIndex(outputWrites, l, m);
+			}
 
 			start = high_resolution_clock::now();
 		}

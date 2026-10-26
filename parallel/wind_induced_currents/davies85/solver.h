@@ -34,6 +34,8 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		double endTime;
 		double outputTimeStep;
 
+		vector<size_t> outputWrites;
+
 		string outDir;
 
 		shared_ptr<Calc::Time::IAdjustTimeStep> timeStep;
@@ -97,7 +99,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		Solver(
 			Data& data, 
 			bool calcNU, bool interpolateWind, bool writeOutput,
-			double tickTime, double endTime, double outputTimeStep, string outDir,
+			double tickTime, double endTime, double outputTimeStep, const vector<size_t>& outputWrites, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<IKernel> kernel
 		);
