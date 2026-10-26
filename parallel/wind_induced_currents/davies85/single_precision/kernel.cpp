@@ -199,27 +199,6 @@ Kernel::Kernel(
 	calcVAKernel.setArg(16, bufferNU);
 	calcVAKernel.setArg(17, bufferV1A);
 
-	calcRHSKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs");
-
-	calcRHSKernel.setArg(0, (float)data.f);
-	calcRHSKernel.setArg(1, (float)data.kb);
-	calcRHSKernel.setArg(2, (float)data.rho);
-	calcRHSKernel.setArg(3, (float)data.dx);
-	calcRHSKernel.setArg(4, (float)data.dy);
-	calcRHSKernel.setArg(6, (int)data.ny);
-	calcRHSKernel.setArg(7, (int)data.nz);
-	calcRHSKernel.setArg(8, bufferNU);
-	calcRHSKernel.setArg(9, bufferDZ);
-	calcRHSKernel.setArg(10, bufferH);
-	calcRHSKernel.setArg(11, bufferQX);
-	calcRHSKernel.setArg(12, bufferQY);
-	calcRHSKernel.setArg(13, bufferUA);
-	calcRHSKernel.setArg(14, bufferVA);
-	calcRHSKernel.setArg(15, bufferUF);
-	calcRHSKernel.setArg(16, bufferVF);
-	calcRHSKernel.setArg(17, bufferUD);
-	calcRHSKernel.setArg(18, bufferVD);
-
 	createTridiagonalMatrixKernel = cl::Kernel(program, "wind_induced_currents_davies85_create_tridiagonal_matrix");
 
 	createTridiagonalMatrixKernel.setArg(0, (float)data.kb);
@@ -232,19 +211,52 @@ Kernel::Kernel(
 	createTridiagonalMatrixKernel.setArg(8, bufferAC);
 	createTridiagonalMatrixKernel.setArg(9, bufferAR);
 
-	calcUVFKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_uvf");
+	calcRHSUKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs_u");
+	calcRHSUKernel.setArg(0, (float)data.f);
+	calcRHSUKernel.setArg(1, (float)data.kb);
+	calcRHSUKernel.setArg(2, (float)data.rho);
+	calcRHSUKernel.setArg(4, (int)data.ny);
+	calcRHSUKernel.setArg(5, (int)data.nz);
+	calcRHSUKernel.setArg(6, bufferNU);
+	calcRHSUKernel.setArg(7, bufferDZ);
+	calcRHSUKernel.setArg(8, bufferH);
+	calcRHSUKernel.setArg(9, bufferQX);
+	calcRHSUKernel.setArg(11, bufferUF);
+	calcRHSUKernel.setArg(12, bufferVF);
+	calcRHSUKernel.setArg(13, bufferUD);
 
-	calcUVFKernel.setArg(0, (int)data.ny);
-	calcUVFKernel.setArg(1, (int)data.nz);
-	calcUVFKernel.setArg(2, bufferH);
-	calcUVFKernel.setArg(3, bufferDZ);
-	calcUVFKernel.setArg(4, bufferAL);
-	calcUVFKernel.setArg(5, bufferAC);
-	calcUVFKernel.setArg(6, bufferAR);
-	calcUVFKernel.setArg(7, bufferUF);
-	calcUVFKernel.setArg(8, bufferVF);
-	calcUVFKernel.setArg(9, bufferUD);
-	calcUVFKernel.setArg(10, bufferVD);
+	calcRHSVKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_rhs_v");
+	calcRHSVKernel.setArg(0, (float)data.f);
+	calcRHSVKernel.setArg(1, (float)data.kb);
+	calcRHSVKernel.setArg(2, (float)data.rho);
+	calcRHSVKernel.setArg(4, (int)data.ny);
+	calcRHSVKernel.setArg(5, (int)data.nz);
+	calcRHSVKernel.setArg(6, bufferNU);
+	calcRHSVKernel.setArg(7, bufferDZ);
+	calcRHSVKernel.setArg(8, bufferH);
+	calcRHSVKernel.setArg(9, bufferQY);
+	calcRHSVKernel.setArg(11, bufferUF);
+	calcRHSVKernel.setArg(12, bufferVF);
+	calcRHSVKernel.setArg(13, bufferVD);
+
+	calcUFKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_column");
+	calcVFKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_column");
+
+	for (auto* kr : { &calcUFKernel, &calcVFKernel }) {
+		kr->setArg(0, (int)data.ny);
+		kr->setArg(1, (int)data.nz);
+		kr->setArg(2, bufferH);
+		kr->setArg(3, bufferDZ);
+		kr->setArg(4, bufferAL);
+		kr->setArg(5, bufferAC);
+		kr->setArg(6, bufferAR);
+	}
+
+	calcUFKernel.setArg(7, bufferUD);
+	calcUFKernel.setArg(8, bufferUF);
+
+	calcVFKernel.setArg(7, bufferVD);
+	calcVFKernel.setArg(8, bufferVF);
 
 	calcResidualKernel = cl::Kernel(program, "wind_induced_currents_davies85_calc_residual");
 
@@ -385,15 +397,30 @@ void Kernel::swapVA() {
 	swap(bufferV1A, bufferVA);
 }
 
-void Kernel::calcRHS(double dt) {
-	calcRHSKernel.setArg(5, (float)dt);
-	calcRHSKernel.setArg(13, bufferUA);
-	calcRHSKernel.setArg(14, bufferVA);
+void Kernel::calcRHSU(double dt) {
+	calcRHSUKernel.setArg(3, (float)dt);
+	calcRHSUKernel.setArg(10, bufferUA);
 
-	auto err = queue.enqueueNDRangeKernel(calcRHSKernel, cl::NullRange, volumeRange, cl::NullRange);
+	auto err = queue.enqueueNDRangeKernel(calcRHSUKernel, cl::NullRange, volumeRange, cl::NullRange);
 
 	err = queue.enqueueCopyBuffer(bufferUD, bufferUDT, 0, 0, sizeof(float) * data.nx * data.ny * data.nz);
+}
+
+void Kernel::calcUF() {
+	auto err = queue.enqueueNDRangeKernel(calcUFKernel, cl::NullRange, surfaceRange, cl::NullRange);
+}
+
+void Kernel::calcRHSV(double dt) {
+	calcRHSVKernel.setArg(3, (float)dt);
+	calcRHSVKernel.setArg(10, bufferVA);
+
+	auto err = queue.enqueueNDRangeKernel(calcRHSVKernel, cl::NullRange, volumeRange, cl::NullRange);
+
 	err = queue.enqueueCopyBuffer(bufferVD, bufferVDT, 0, 0, sizeof(float) * data.nx * data.ny * data.nz);
+}
+
+void Kernel::calcVF() {
+	auto err = queue.enqueueNDRangeKernel(calcVFKernel, cl::NullRange, surfaceRange, cl::NullRange);
 }
 
 void Kernel::createTridiagonalMatrix(double dt) {
@@ -404,10 +431,6 @@ void Kernel::createTridiagonalMatrix(double dt) {
 
 void Kernel::calcResidual() {
 	auto err = queue.enqueueNDRangeKernel(calcResidualKernel, cl::NullRange, surfaceRange, cl::NullRange);
-}
-
-void Kernel::calcUVF() {
-	auto err = queue.enqueueNDRangeKernel(calcUVFKernel, cl::NullRange, surfaceRange, cl::NullRange);
 }
 
 void Kernel::updateUVF() {

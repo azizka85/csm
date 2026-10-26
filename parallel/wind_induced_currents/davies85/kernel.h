@@ -15,11 +15,15 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		virtual void swapUA() = 0;
 		virtual void swapVA() = 0;
 
-		virtual void calcRHS(double dt) = 0;
-		virtual void createTridiagonalMatrix(double dt) = 0;
-		virtual void calcResidual() = 0;
+		virtual void calcRHSU(double dt) = 0;
+		virtual void calcUF() = 0;
 
-		virtual void calcUVF() = 0;
+		virtual void calcRHSV(double dt) = 0;
+		virtual void calcVF() = 0;
+
+		virtual void createTridiagonalMatrix(double dt) = 0;
+		virtual void calcResidual() = 0;		
+
 		virtual void updateUVF() = 0;
 		virtual void updateUVD() = 0;
 

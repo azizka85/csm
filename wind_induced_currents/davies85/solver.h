@@ -99,25 +99,6 @@ namespace WindInducedCurrents::Davies85 {
 			vector<double>& v1a
 		);
 
-		void calcRHS(
-			size_t nx, size_t ny, size_t nz,
-			PhysicalParams phys, double kb, 
-			double dx, double dy, double dt,
-			vector<double>& dz, 
-			vector<double>& h,
-			vector<double>& nu,
-			vector<double>& qx,
-			vector<double>& qy,
-			vector<double>& ua,
-			vector<double>& u1a,
-			vector<double>& va,
-			vector<double>& v1a,
-			vector<double>& uf,
-			vector<double>& vf,
-			vector<double>& ud,
-			vector<double>& vd
-		);
-
 		void createTridiagonalMatrix(
 			double kb, double dt,
 			size_t nx, size_t ny, size_t nz,
@@ -129,17 +110,43 @@ namespace WindInducedCurrents::Davies85 {
 			vector<double>& ar
 		);
 
-		void calcUVF(
+		void calcRHSU(
+			size_t nx, size_t ny, size_t nz,
+			const PhysicalParams& phys, 
+			double kb, double dt,
+			const vector<double>& dz,
+			const vector<double>& h,
+			const vector<double>& nu,
+			const vector<double>& qx,
+			const vector<double>& ua,
+			const vector<double>& uf,
+			const vector<double>& vf,
+			vector<double>& ud
+		);
+
+		void calcRHSV(
+			size_t nx, size_t ny, size_t nz,
+			const PhysicalParams& phys,
+			double kb, double dt,
+			const vector<double>& dz,
+			const vector<double>& h,
+			const vector<double>& nu,
+			const vector<double>& qy,
+			const vector<double>& va,
+			const vector<double>& uf,
+			const vector<double>& vf,
+			vector<double>& vd
+		);
+
+		void solveColumn(
 			size_t nx, size_t ny, size_t nz,
 			vector<double>& h,
 			vector<double>& dz,
 			vector<double>& al,
 			vector<double>& ac,
 			vector<double>& ar,
-			vector<double>& uf,
-			vector<double>& vf,
-			vector<double>& ud,
-			vector<double>& vd
+			vector<double>& d,
+			vector<double>& x
 		);
 
 		void calcZ(

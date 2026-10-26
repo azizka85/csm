@@ -240,103 +240,6 @@ void Solver::calcVA(
 	}
 }
 
-void Solver::calcRHS(
-	size_t nx, size_t ny, size_t nz,
-	PhysicalParams phys, double kb, 
-	double dx, double dy, double dt, 
-	vector<double>& dz, 
-	vector<double>& h, 
-	vector<double>& nu, 
-	vector<double>& qx, 
-	vector<double>& qy, 
-	vector<double>& ua, 
-	vector<double>& u1a, 
-	vector<double>& va, 
-	vector<double>& v1a, 
-	vector<double>& uf, 
-	vector<double>& vf, 
-	vector<double>& ud, 
-	vector<double>& vd
-) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t p = j + i * ny;
-
-			if (h[p] > 0) {
-				for (size_t k = 0; k < nz; k++) {
-					size_t id = k + p * nz;
-
-					size_t idu = k + 1 + p * nz;
-					size_t idd = k - 1 + p * nz;
-
-					size_t idb = nz - 1 + p * nz;
-
-					size_t nb = nz + p * (nz + 1);
-
-					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
-
-					double ub = (uf[idb] + ua[p]) / (1 + ab);
-					double vb = (vf[idb] + va[p]) / (1 + ab);
-
-					size_t nid = k + p * (nz + 1);
-					size_t nidu = k + 1 + p * (nz + 1);
-
-					if (k == 0) {
-						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[nid];
-						double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[nid];
-
-						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-							nu[nid] * (uf[id] - um1) / 2 / dz[k]
-						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p]
-						+ dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
-
-						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-							nu[nid] * (vf[id] - vm1) / 2 / dz[k]
-						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p]
-						+ dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
-					}
-					else if (k == nz - 1) {
-						double un = (
-							uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[nidu]
-							- kb * h[p] * dz[k] * ua[p] / nu[nidu]
-						) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-						double vn = (
-							vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[nidu]
-							- kb * h[p] * dz[k] * va[p] / nu[nidu]
-						) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[nidu] * (un - uf[id]) / 2 / dz[k] -
-							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p]
-						- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
-							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p]
-						- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-					}
-					else {						
-						ud[id] = uf[id] + phys.f * vf[id] * dt + dt * (
-							nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-							nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p];
-
-						vd[id] = vf[id] - phys.f * uf[id] * dt + dt * (
-							nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-							nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-						) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p];
-					}
-				}
-			}					
-		}
-	}
-}
-
 void Solver::createTridiagonalMatrix(
 	double kb, double dt, 
 	size_t nx, size_t ny, size_t nz,
@@ -384,17 +287,127 @@ void Solver::createTridiagonalMatrix(
 	}
 }
 
-void Solver::calcUVF(
+void Solver::calcRHSU(
+	size_t nx, size_t ny, size_t nz,
+	const PhysicalParams& phys,
+	double kb, double dt,
+	const vector<double>& dz,
+	const vector<double>& h,
+	const vector<double>& nu,
+	const vector<double>& qx,
+	const vector<double>& ua,
+	const vector<double>& uf,
+	const vector<double>& vf,
+	vector<double>& ud
+) {
+	for (size_t i = 0; i < nx; i++) {
+		for (size_t j = 0; j < ny; j++) {
+			size_t p = j + i * ny;
+
+			if (h[p] > 0) {
+				for (size_t k = 0; k < nz; k++) {
+					size_t id = k + p * nz;
+					size_t idu = k + 1 + p * nz;
+					size_t idd = k - 1 + p * nz;
+					size_t idb = nz - 1 + p * nz;
+
+					size_t nid = k + p * (nz + 1);
+					size_t nidu = k + 1 + p * (nz + 1);
+					size_t nb = nz + p * (nz + 1);
+
+					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
+					double ub = (uf[idb] + ua[p]) / (1 + ab);
+
+					double visc;
+
+					if (k == 0) {
+						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[nid];
+						visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - um1) / 2 / dz[k];
+					}
+					else if (k == nz - 1) {
+						double un = (uf[id] - ab * uf[id] - 2 * ab * ua[p]) / (1 + ab);
+						visc = nu[nidu] * (un - uf[id]) / 2 / dz[k] - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
+					}
+					else {
+						visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
+					}
+
+					ud[id] = uf[id] + phys.f * vf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
+						+ kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p];
+
+					if (k == 0)      ud[id] += dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
+					if (k == nz - 1) ud[id] -= dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + ab);
+				}
+			}
+		}
+	}
+}
+
+void Solver::calcRHSV(
+	size_t nx, size_t ny, size_t nz,
+	const PhysicalParams& phys,
+	double kb, double dt,
+	const vector<double>& dz,
+	const vector<double>& h,
+	const vector<double>& nu,
+	const vector<double>& qy,
+	const vector<double>& va,
+	const vector<double>& uf,
+	const vector<double>& vf,
+	vector<double>& vd
+) {
+	for (size_t i = 0; i < nx; i++) {
+		for (size_t j = 0; j < ny; j++) {
+			size_t p = j + i * ny;
+
+			if (h[p] > 0) {
+				for (size_t k = 0; k < nz; k++) {
+					size_t id = k + p * nz;
+					size_t idu = k + 1 + p * nz;
+					size_t idd = k - 1 + p * nz;
+					size_t idb = nz - 1 + p * nz;
+
+					size_t nid = k + p * (nz + 1);
+					size_t nidu = k + 1 + p * (nz + 1);
+					size_t nb = nz + p * (nz + 1);
+
+					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
+					double vb = (vf[idb] + va[p]) / (1 + ab);
+
+					double visc;
+
+					if (k == 0) {
+						double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[nid];
+						visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vm1) / 2 / dz[k];
+					}
+					else if (k == nz - 1) {
+						double vn = (vf[id] - ab * vf[id] - 2 * ab * va[p]) / (1 + ab);
+						visc = nu[nidu] * (vn - vf[id]) / 2 / dz[k] - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
+					}
+					else {
+						visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
+					}
+
+					vd[id] = vf[id] - phys.f * uf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
+						+ kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p];
+
+					if (k == 0)      vd[id] += dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
+					if (k == nz - 1) vd[id] -= dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + ab);
+				}
+			}
+		}
+	}
+}
+
+void Solver::solveColumn(
 	size_t nx, size_t ny, size_t nz,
 	vector<double>& h, 
 	vector<double>& dz,
 	vector<double>& al, 
 	vector<double>& ac, 
 	vector<double>& ar, 
-	vector<double>& uf, 
-	vector<double>& vf, 
-	vector<double>& ud, 
-	vector<double>& vd
+	vector<double>& d, 
+	vector<double>& x
 ) {
 	for (size_t i = 0; i < nx; i++) {
 		for (size_t j = 0; j < ny; j++) {
@@ -411,32 +424,22 @@ void Solver::calcUVF(
 
 				matrix.solve(
 					Tridiagonal::SolutionState{
-						.u = span<double>(uf.data() + k * nz, nz),
-						.d = span<double>(ud.data() + k * nz, nz),
+						.u = span<double>(x.data() + k * nz, nz),
+						.d = span<double>(d.data() + k * nz, nz),
 					}
 				);
 
-				matrix.solve(
-					Tridiagonal::SolutionState{
-						.u = span<double>(vf.data() + k * nz, nz),
-						.d = span<double>(vd.data() + k * nz, nz),
-					}
-				);
-
-				double mu = 0, mv = 0, s = 0;
+				double m = 0, s = 0;
 
 				for (size_t l = 0; l < nz; l++) {
-					mu += dz[l] * uf[k*nz + l];
-					mv += dz[l] * vf[k*nz + l];
+					m += dz[l] * x[k*nz + l];
 					s += dz[l];
 				}
 
-				mu /= s;
-				mv /= s;
+				m /= s;
 
 				for (size_t l = 0; l < nz; l++) {
-					uf[k*nz + l] -= mu;
-					vf[k*nz + l] -= mv;
+					x[k*nz + l] -= m;
 				}
 			}
 		}
@@ -896,20 +899,6 @@ void Solver::solve() {
 
 		Current currentData{ .ua = ua, .va = va };
 
-		calcRHS(
-			nx, ny, nz, 
-			phys, kb,
-			dx, dy, dtStep,
-			dz, bathymetry.h,
-			nu, 
-			windStress.qx, windStress.qy,
-			ua, u1a, va, v1a, 
-			uf, vf, ud, vd
-		);
-
-		udt = ud;
-		vdt = vd;
-
 		createTridiagonalMatrix(
 			kb, dtStep, 
 			nx, ny, nz,
@@ -917,13 +906,17 @@ void Solver::solve() {
 			al, ac, ar
 		);
 
-		calcUVF(
-			nx, ny, nz, 
-			bathymetry.h, dz,
-			al, ac, ar,
-			uf, vf,
-			ud, vd
-		);
+		calcRHSU(nx, ny, nz, phys, kb, dtStep, dz, bathymetry.h, nu, windStress.qx, ua, uf, vf, ud);
+
+		udt = ud;
+
+		solveColumn(nx, ny, nz, bathymetry.h, dz, al, ac, ar, ud, uf);
+
+		calcRHSV(nx, ny, nz, phys, kb, dtStep, dz, bathymetry.h, nu, windStress.qy, va, uf, vf, vd);
+
+		vdt = vd;
+
+		solveColumn(nx, ny, nz, bathymetry.h, dz, al, ac, ar, vd, vf);
 
 		calcZ(
 			nx, ny, nz, 

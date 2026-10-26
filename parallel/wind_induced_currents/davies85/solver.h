@@ -61,6 +61,15 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 			vector<double>& vs
 		);
 
+		void calculateBottomStress(
+			int nx, int ny, int nz,
+			const VolumeState& volume,
+			const vector<double>& uf, const vector<double>& vf,
+			const vector<double>& ua, const vector<double>& va,
+			const vector<double>& nu,
+			vector<double>& tbx, vector<double>& tby
+		);
+
 		void writeData(
 			const TimeState& time,
 			const VolumeState& volume,
@@ -77,6 +86,8 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 			vector<double>& v,
 			vector<double>& w,
 			vector<double>& nu,
+			vector<double>& tbx,
+			vector<double>& tby,
 			Writers::Surface::Writer& surfaceWriter,
 			Writers::Volume::Writer& volumeElemWriter,
 			Writers::Volume::Writer& volumeNodeWriter

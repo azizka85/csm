@@ -74,9 +74,14 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		cl::Kernel calcUAKernel;
 		cl::Kernel calcVAKernel;
 
-		cl::Kernel calcRHSKernel;
 		cl::Kernel createTridiagonalMatrixKernel;
-		cl::Kernel calcUVFKernel;
+
+		cl::Kernel calcRHSUKernel;
+		cl::Kernel calcRHSVKernel;
+
+		cl::Kernel calcUFKernel;
+		cl::Kernel calcVFKernel;
+
 		cl::Kernel calcResidualKernel;
 
 		cl::Kernel calcZKernel;
@@ -113,11 +118,15 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		void swapUA() override;
 		void swapVA() override;
 
-		void calcRHS(double dt) override;
+		void calcRHSU(double dt) override;
+		void calcUF() override;
+
+		void calcRHSV(double dt) override;
+		void calcVF() override;
+
 		void createTridiagonalMatrix(double dt) override;
 		void calcResidual() override;
 
-		void calcUVF() override;
 		void updateUVF() override;
 		void updateUVD() override;
 

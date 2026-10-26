@@ -115,6 +115,36 @@ void Solver::calculateSurfaceCurrent(
 	}
 }
 
+void Solver::calculateBottomStress(
+	int nx, int ny, int nz, 
+	const VolumeState& volume, 
+	const vector<double>& uf, const vector<double>& vf, 
+	const vector<double>& ua, const vector<double>& va, 
+	const vector<double>& nu, 
+	vector<double>& tbx, vector<double>& tby
+) {
+	for (int i = 0; i < nx; i++) {
+		for (int j = 0; j < ny; j++) {
+			int p = j + i * ny;
+
+			tbx[p] = 0;
+			tby[p] = 0;
+
+			double h = volume.bathymetry.h[p];
+
+			if (h <= 0) continue;
+
+			int idb = nz - 1 + p * nz;          
+			int nb = nz + p * (nz + 1);        
+
+			double a = data.kb * h * volume.dz[nz - 1] / 2 / nu[nb];
+
+			tbx[p] = data.rho * data.kb * (uf[idb] + ua[p]) / (1 + a);
+			tby[p] = data.rho * data.kb * (vf[idb] + va[p]) / (1 + a);
+		}
+	}
+}
+
 void Solver::writeData(
 	const TimeState& time,
 	const VolumeState& volume,
@@ -131,6 +161,8 @@ void Solver::writeData(
 	vector<double>& v,
 	vector<double>& w,
 	vector<double>& nu,
+	vector<double>& tbx,
+	vector<double>& tby,
 	Writers::Surface::Writer& surfaceWriter,
 	Writers::Volume::Writer& volumeElemWriter,
 	Writers::Volume::Writer& volumeNodeWriter
@@ -142,6 +174,7 @@ void Solver::writeData(
 	Utils::Data::volumePlusSurface(nx, ny, volume.nz, vf, va, v);
 
 	calculateSurfaceCurrent(nx, ny, volume.nz, volume, currentWindData.stress, u, v, nu, us, vs);
+	calculateBottomStress(nx, ny, volume.nz, volume, uf, vf, ua, va, nu, tbx, tby);
 
 	surfaceWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
@@ -151,6 +184,7 @@ void Solver::writeData(
 			Column{ .name = "va", .precision = 9 },
 			Column{ .name = "w10", .precision = 9 },
 			Column{ .name = "q", .precision = 9 },
+			Column{ .name = "tb", .precision = 9 },
 			Column{ .name = "z", .precision = 18 }
 		},
 		vector<Writers::Surface::DataKind>{
@@ -169,6 +203,10 @@ void Solver::writeData(
 			SurfaceVector{
 				.vx = currentWindData.stress.qx,
 				.vy = currentWindData.stress.qy
+			},
+			SurfaceVector{
+				.vx = tbx,
+				.vy = tby
 			},
 			Scalar{
 				.v = z
@@ -220,6 +258,9 @@ void Solver::solve() {
 
 	vector<double> us(data.nx * data.ny);
 	vector<double> vs(data.nx * data.ny);
+
+	vector<double> tbx(data.nx * data.ny);
+	vector<double> tby(data.nx * data.ny);
 
 	setInitialCondition(
 		data.nx, data.ny, data.nz,
@@ -308,8 +349,9 @@ void Solver::solve() {
 			data.z,
 			dirs,
 			data.uf, data.ua, us, u,
-			data.vf, data.va, vs, v,
+			data.vf, data.va, vs, v,			
 			w, data.nu,
+			tbx, tby,
 			surfaceWriter,
 			volumeElemWriter,
 			volumeNodeWriter
@@ -336,10 +378,14 @@ void Solver::solve() {
 
 		kernel->calcVA(dtStep);
 		kernel->swapVA();
-
-		kernel->calcRHS(dtStep);
+		
 		kernel->createTridiagonalMatrix(dtStep);
-		kernel->calcUVF();
+		
+		kernel->calcRHSU(dtStep);
+		kernel->calcUF();
+
+		kernel->calcRHSV(dtStep);
+		kernel->calcVF();
 
 		kernel->calcZ(dtStep);
 
@@ -435,6 +481,7 @@ void Solver::solve() {
 					data.uf, data.ua, us, u,
 					data.vf, data.va, vs, v,
 					w, data.nu,
+					tbx, tby,
 					surfaceWriter,
 					volumeElemWriter,
 					volumeNodeWriter

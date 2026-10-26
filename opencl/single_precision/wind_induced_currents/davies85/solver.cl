@@ -101,99 +101,6 @@ __kernel void wind_induced_currents_davies85_calc_va(
 	}
 }
 
-__kernel void wind_induced_currents_davies85_calc_rhs(
-    float f, float kb, float rho, 
-    float dx, float dy, float dt,
-    int ny, int nz,
-    __global const float* nu,
-    __global const float* dz,
-    __global const float* h,
-    __global const float* qx,
-    __global const float* qy,
-    __global const float* ua,
-    __global const float* va,
-    __global const float* uf,
-    __global const float* vf,
-    __global float* ud,
-    __global float* vd
-) {
-    int i = get_global_id(0);
-    int j = get_global_id(1);
-    int k = get_global_id(2);
-
-    int p = j + i*ny;
-
-    if (h[p] > 0) {
-		int id = k + p * nz;
-
-		int idu = k + 1 + p * nz;
-		int idd = k - 1 + p * nz;
-
-		int idb = nz - 1 + p * nz;
-
-		int nb = nz + p*(nz + 1);
-
-		float ab = kb*h[p]*dz[nz - 1]/2/nu[nb];
-
-		float ub = (uf[idb] + ua[p])/(1 + ab);
-		float vb = (vf[idb] + va[p])/(1 + ab);
-
-		int nid = k + p * (nz + 1);
-		int nidu = k + 1 + p * (nz + 1);
-
-		if (k == 0) {
-			float um1 = uf[id] + h[p] * qx[p] * dz[k] / rho / nu[nid];
-			float vm1 = vf[id] + h[p] * qy[p] * dz[k] / rho / nu[nid];
-
-			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-				nu[nid] * (uf[id] - um1) / 2 / dz[k]
-			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p]
-			+ dt * qx[p] / rho / h[p] / 2 / dz[k];
-
-			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-				nu[nid] * (vf[id] - vm1) / 2 / dz[k]
-			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p]
-			+ dt * qy[p] / rho / h[p] / 2 / dz[k];
-		}
-		else if (k == nz - 1) {
-			float un = (
-				uf[id] - kb * h[p] * dz[k] * uf[id] / 2 / nu[nidu]
-				- kb * h[p] * dz[k] * ua[p] / nu[nidu]
-			) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-			float vn = (
-				vf[id] - kb * h[p] * dz[k] * vf[id] / 2 / nu[nidu]
-				- kb * h[p] * dz[k] * va[p] / nu[nidu]
-			) / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[nidu] * (un - uf[id]) / 2 / dz[k] -
-				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p]
-			- dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-
-			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[nidu] * (vn - vf[id]) / 2 / dz[k] -
-				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p]
-			- dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]);
-		}
-		else {
-			ud[id] = uf[id] + f * vf[id] * dt + dt * (
-				nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) -
-				nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * ub * dt / h[p] - qx[p] * dt / rho / h[p];
-
-			vd[id] = vf[id] - f * uf[id] * dt + dt * (
-				nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) -
-				nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1])
-			) / h[p] / h[p] / dz[k] + kb * vb * dt / h[p] - qy[p] * dt / rho / h[p];
-		}        
-    }    
-}
-
 __kernel void wind_induced_currents_davies85_create_tridiagonal_matrix(
     float kb, float dt,
     int ny, int nz,
@@ -239,17 +146,117 @@ __kernel void wind_induced_currents_davies85_create_tridiagonal_matrix(
 	}
 }
 
-__kernel void wind_induced_currents_davies85_calc_uvf(
+__kernel void wind_induced_currents_davies85_calc_rhs_u(
+    float f, float kb, float rho, float dt,
     int ny, int nz,
-	__global const float* h,
-	__global const float* dz,
+    __global const float* nu,
+    __global const float* dz,
+    __global const float* h,
+    __global const float* qx,
+    __global const float* ua,
+    __global const float* uf,
+    __global const float* vf,
+    __global float* ud
+) {
+    int i = get_global_id(0);
+    int j = get_global_id(1);
+    int k = get_global_id(2);
+
+    int p = j + i*ny;
+
+    if (h[p] > 0) {
+        int id  = k + p*nz;
+        int idu = k + 1 + p*nz;
+        int idd = k - 1 + p*nz;
+        int idb = nz - 1 + p*nz;
+
+        int nid  = k + p*(nz + 1);
+        int nidu = k + 1 + p*(nz + 1);
+        int nb   = nz + p*(nz + 1);
+
+        float ab = kb*h[p]*dz[nz - 1]/2/nu[nb];
+        float ub = (uf[idb] + ua[p])/(1 + ab);
+
+        float visc;
+
+        if (k == 0) {
+            float um1 = uf[id] + h[p]*qx[p]*dz[k]/rho/nu[nid];
+            visc = nu[nidu]*(uf[idu] - uf[id])/(dz[k + 1] + dz[k]) - nu[nid]*(uf[id] - um1)/2/dz[k];
+        } else if (k == nz - 1) {
+            float un = (uf[id] - ab*uf[id] - 2*ab*ua[p])/(1 + ab);
+            visc = nu[nidu]*(un - uf[id])/2/dz[k] - nu[nid]*(uf[id] - uf[idd])/(dz[k] + dz[k - 1]);
+        } else {
+            visc = nu[nidu]*(uf[idu] - uf[id])/(dz[k + 1] + dz[k]) - nu[nid]*(uf[id] - uf[idd])/(dz[k] + dz[k - 1]);
+        }
+
+        ud[id] = uf[id] + f*vf[id]*dt + dt*visc/h[p]/h[p]/dz[k]
+               + kb*ub*dt/h[p] - qx[p]*dt/rho/h[p];
+
+        if (k == 0)      ud[id] += dt*qx[p]/rho/h[p]/2/dz[k];
+        if (k == nz - 1) ud[id] -= dt*kb*ua[p]/h[p]/2/dz[k]/(1 + ab);
+    }
+}
+
+__kernel void wind_induced_currents_davies85_calc_rhs_v(
+    float f, float kb, float rho, float dt,
+    int ny, int nz,
+    __global const float* nu,
+    __global const float* dz,
+    __global const float* h,
+    __global const float* qy,
+    __global const float* va,
+    __global const float* uf,
+    __global const float* vf,    
+    __global float* vd
+) {
+    int i = get_global_id(0);
+    int j = get_global_id(1);
+    int k = get_global_id(2);
+
+    int p = j + i*ny;
+
+    if (h[p] > 0) {
+        int id  = k + p*nz;
+        int idu = k + 1 + p*nz;
+        int idd = k - 1 + p*nz;
+        int idb = nz - 1 + p*nz;
+
+        int nid  = k + p*(nz + 1);
+        int nidu = k + 1 + p*(nz + 1);
+        int nb   = nz + p*(nz + 1);
+
+        float ab = kb*h[p]*dz[nz - 1]/2/nu[nb];
+        float vb = (vf[idb] + va[p])/(1 + ab);
+
+        float visc;
+
+        if (k == 0) {
+            float vm1 = vf[id] + h[p]*qy[p]*dz[k]/rho/nu[nid];
+            visc = nu[nidu]*(vf[idu] - vf[id])/(dz[k + 1] + dz[k]) - nu[nid]*(vf[id] - vm1)/2/dz[k];
+        } else if (k == nz - 1) {
+            float vn = (vf[id] - ab*vf[id] - 2*ab*va[p])/(1 + ab);
+            visc = nu[nidu]*(vn - vf[id])/2/dz[k] - nu[nid]*(vf[id] - vf[idd])/(dz[k] + dz[k - 1]);
+        } else {
+            visc = nu[nidu]*(vf[idu] - vf[id])/(dz[k + 1] + dz[k]) - nu[nid]*(vf[id] - vf[idd])/(dz[k] + dz[k - 1]);
+        }
+
+        vd[id] = vf[id] - f*uf[id]*dt + dt*visc/h[p]/h[p]/dz[k]
+               + kb*vb*dt/h[p] - qy[p]*dt/rho/h[p];
+
+        if (k == 0)      vd[id] += dt*qy[p]/rho/h[p]/2/dz[k];
+        if (k == nz - 1) vd[id] -= dt*kb*va[p]/h[p]/2/dz[k]/(1 + ab);
+    }
+}
+
+__kernel void wind_induced_currents_davies85_calc_column(
+    int ny, int nz,
+    __global const float* h,
+    __global const float* dz,
     __global const float* al,
     __global const float* ac,
     __global const float* ar,
-    __global float* uf,
-    __global float* vf,
-    __global float* ud,
-    __global float* vd
+    __global float* d,
+    __global float* x
 ) {
     int i = get_global_id(0);
     int j = get_global_id(1);
@@ -257,36 +264,21 @@ __kernel void wind_induced_currents_davies85_calc_uvf(
     int k = j + i*ny;
 
     if (h[k] > 0) {
-		int shift = nz * k;
+        int shift = nz*k;
 
-        slae_direct_tridiagonal_calc(
-            nz,             
-            al + shift, ac + shift, ar + shift, 
-            ud + shift, uf + shift
-        );
+        slae_direct_tridiagonal_calc(nz, al + shift, ac + shift, ar + shift, d + shift, x + shift);
 
-        slae_direct_tridiagonal_calc(
-            nz,             
-            al + shift, ac + shift, ar + shift, 
-            vd + shift, vf + shift
-        );   
-		
-		float mu = 0, mv = 0, s = 0;
+        float m = 0, s = 0;
 
-		for (int l = 0; l < nz; l++) {
-            mu += dz[l] * uf[shift + l];
-            mv += dz[l] * vf[shift + l];
-            s  += dz[l];
+        for (int l = 0; l < nz; l++) { 
+            m += dz[l]*x[shift + l]; 
+            s += dz[l]; 
         }
 
-		mu /= s;
-        mv /= s;
+        m /= s;
 
-		for (int l = 0; l < nz; l++) {
-            uf[shift + l] -= mu;
-            vf[shift + l] -= mv;
-        }
-    }    
+        for (int l = 0; l < nz; l++) x[shift + l] -= m;
+    }
 }
 
 __kernel void wind_induced_currents_davies85_calc_residual(
