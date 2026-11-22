@@ -29,6 +29,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		bool interpolateWind;
 
 		bool writeOutput;
+		bool writeVolumeData;
 
 		double tickTime;
 		double endTime;
@@ -98,7 +99,7 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 	public:
 		Solver(
 			Data& data, 
-			bool calcNU, bool interpolateWind, bool writeOutput,
+			bool calcNU, bool interpolateWind, bool writeOutput, bool writeVolumeData,
 			double tickTime, double endTime, double outputTimeStep, const vector<size_t>& outputWrites, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<IKernel> kernel

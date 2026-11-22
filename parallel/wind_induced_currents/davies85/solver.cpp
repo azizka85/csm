@@ -16,7 +16,7 @@ using namespace Parallel::WindInducedCurrents::Davies85;
 
 Solver::Solver(
 	Data& data, 
-	bool calcNU, bool interpolateWind, bool writeOutput,
+	bool calcNU, bool interpolateWind, bool writeOutput, bool writeVolumeData,
 	double tickTime, double endTime, double outputTimeStep, const vector<size_t>& outputWrites, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<IKernel> kernel
@@ -25,6 +25,7 @@ Solver::Solver(
 	this->interpolateWind = interpolateWind;
 
 	this->writeOutput = writeOutput;
+	this->writeVolumeData = writeVolumeData;
 
 	this->tickTime = tickTime;
 	this->endTime = endTime;
@@ -218,31 +219,33 @@ void Solver::writeData(
 		dirs.surface
 	);	
 
-	volumeElemWriter.write(
-		TimeState{ .m = time.m, .t = time.t },
-		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz, .dz = volume.dz, .bathymetry = volume.bathymetry },
-		vector<Column>{
-			Column{ .name = "v", .precision = 9 }
-		},
-		vector<Writers::Volume::DataKind>{
-			VolumeVector{ .vx = u, .vy = v, .vz = w }
-		},
-		dirs.volume
-	);
+	if (writeVolumeData) {
+		volumeElemWriter.write(
+			TimeState{ .m = time.m, .t = time.t },
+			VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz, .dz = volume.dz, .bathymetry = volume.bathymetry },
+			vector<Column>{
+				Column{ .name = "v", .precision = 9 }
+			},
+			vector<Writers::Volume::DataKind>{
+				VolumeVector{ .vx = u, .vy = v, .vz = w }
+			},
+			dirs.volume
+		);
 
-	volumeNodeWriter.write(
-		TimeState{ .m = time.m, .t = time.t },
-		VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz + 1, .dz = volume.dz, .bathymetry = volume.bathymetry },
-		vector<Column>{
-			Column{ .name = "nu", .precision = 9 }
-		},
-		vector<Writers::Volume::DataKind>{
-			Scalar{
-				.v = nu
-			}
-		},
-		dirs.viscosity
-	);
+		volumeNodeWriter.write(
+			TimeState{ .m = time.m, .t = time.t },
+			VolumeState{ .nx = nx, .ny = ny, .nz = volume.nz + 1, .dz = volume.dz, .bathymetry = volume.bathymetry },
+			vector<Column>{
+				Column{ .name = "nu", .precision = 9 }
+			},
+			vector<Writers::Volume::DataKind>{
+				Scalar{
+					.v = nu
+				}
+			},
+			dirs.viscosity
+		);
+	}
 }
 
 void Solver::solve() {
