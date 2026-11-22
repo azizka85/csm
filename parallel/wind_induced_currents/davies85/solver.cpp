@@ -173,8 +173,8 @@ void Solver::writeData(
 	size_t nx = data.symmetrise ? volume.nx / 2 : volume.nx;
 	size_t ny = data.symmetrise ? volume.ny / 2 : volume.ny;
 
-	Utils::Data::volumePlusSurface(nx, ny, volume.nz, uf, ua, u);
-	Utils::Data::volumePlusSurface(nx, ny, volume.nz, vf, va, v);
+	Utils::Data::volumePlusSurface(volume.nz, uf, ua, u);
+	Utils::Data::volumePlusSurface(volume.nz, vf, va, v);
 
 	calculateSurfaceCurrent(nx, ny, volume.nz, volume, currentWindData.stress, u, v, nu, us, vs);
 	calculateBottomStress(nx, ny, volume.nz, volume, uf, vf, ua, va, nu, tbx, tby);
@@ -282,7 +282,7 @@ void Solver::solve() {
 		.qy = data.windData[data.currentWindIndex].stress.qy
 	};
 
-	double nuMax = Utils::Viscosity::maxNU(data.nu, data.nx, data.ny, data.nz + 1);
+	double nuMax = Utils::Viscosity::maxNU(data.nu);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
@@ -497,13 +497,13 @@ void Solver::solve() {
 				);
 			}			
 
-			auto umd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, up, data.uf);
-			auto vmd = Utils::Data::maxAbsDifference(data.nx, data.ny, data.nz, vp, data.vf);
-			auto zmd = Utils::Data::maxAbsDifference(data.nx, data.ny, zp, data.z);
+			auto umd = Utils::Data::maxAbsDifference(up, data.uf);
+			auto vmd = Utils::Data::maxAbsDifference(vp, data.vf);
+			auto zmd = Utils::Data::maxAbsDifference(zp, data.z);
 
 			auto maxRes = max(
-				Utils::Data::maxAbsElem(data.nx, data.ny, data.nz, data.ud),
-				Utils::Data::maxAbsElem(data.nx, data.ny, data.nz, data.vd)
+				Utils::Data::maxAbsElem(data.ud),
+				Utils::Data::maxAbsElem(data.vd)
 			);
 
 			std::cout << format(

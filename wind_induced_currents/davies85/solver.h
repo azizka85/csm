@@ -43,6 +43,8 @@ namespace WindInducedCurrents::Davies85 {
 
 		bool calcNU;
 		bool interpolateWind;
+
+		bool writeOutput;
 		
 		double endTime;
 		double outputTimeStep;
@@ -210,7 +212,7 @@ namespace WindInducedCurrents::Davies85 {
 			PhysicalParams phys,
 			double g, double kb,
 			double dx, double dy, bool symmetrise,
-			bool calcNU, bool interpolateWind,
+			bool calcNU, bool interpolateWind, bool writeOutput,
 			double endTime, double outputTimeStep, string outDir,
 			shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 			shared_ptr<Generators::Area::IGenerator> areaGenerator,

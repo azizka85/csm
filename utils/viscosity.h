@@ -6,7 +6,7 @@
 using namespace std;
 
 namespace Utils::Viscosity {
-	double maxNU(vector<double>& nu, int nx, int ny, int nz);
+	double maxNU(vector<double>& nu);
 }
 
 #endif

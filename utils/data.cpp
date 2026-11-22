@@ -1,3 +1,6 @@
+#include <algorithm>
+#include <cmath>
+
 #include "data.h"
 
 using namespace Utils;
@@ -8,101 +11,58 @@ void Data::shiftIndex(vector<size_t>& v, size_t& i, size_t m) {
     }
 }
 
-double Data::maxAbsDifference(int nx, int ny, vector<double>& u, vector<double>& u1) {
+double Data::maxAbsDifference(vector<double>& u, vector<double>& u1) {
     double maxDiff = 0.;
 
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
+    const int np = static_cast<int>(u.size());
 
-            maxDiff = max(
-                maxDiff,
-                abs(u[p] - u1[p])
-            );
-        }
+    #pragma omp parallel for schedule(static) reduction(max:maxDiff)
+    for (int p = 0; p < np; p++) {
+        maxDiff = max(maxDiff, abs(u[p] - u1[p]));
     }
 
     return maxDiff;
 }
 
-double Data::maxAbsDifference(int nx, int ny, int nz, vector<double>& u, vector<double>& u1) {
-    double maxDiff = 0.;
-
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
-
-            for (int k = 0; k < nz; k++) {
-                int id = k + p * nz;
-
-                maxDiff = max(
-                    maxDiff,
-                    abs(u[id] - u1[id])
-                );
-            }
-        }
-    }
-
-    return maxDiff;
-}
-
-double Data::maxAbsElem(int nx, int ny, int nz, vector<double>& u) {
+double Data::maxAbsElem(vector<double>& u) {
     double maxElem = 0;
 
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
+    const int np = static_cast<int>(u.size());
 
-            for (int k = 0; k < nz; k++) {
-                int id = k + p * nz;
-
-                maxElem = max(maxElem, abs(u[id]));
-            }
-        }
+    #pragma omp parallel for schedule(static) reduction(max:maxElem)
+    for (int p = 0; p < np; p++) {
+        maxElem = max(maxElem, abs(u[p]));
     }
+
 
     return maxElem;
 }
 
-void Data::updateData(int nx, int ny, vector<double>& u, vector<double>& u1) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
+void Data::parallelUpdateData(vector<double>& u, vector<double>& u1) {
+    const int n = static_cast<int>(u.size());
 
-            u[p] = u1[p];
-        }
-    }
-}
-
-void Data::updateData(int nx, int ny, int nz, vector<double>& u, vector<double>& u1) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
-
-            for (int k = 0; k < nz; k++) {
-                int id = k + p * nz;
-
-                u[id] = u1[id];
-            }
-        }
+    #pragma omp parallel for schedule(static)
+    for (int i = 0; i < n; i++) {
+        u1[i] = u[i];
     }
 }
 
 void Data::volumePlusSurface(
-    int nx, int ny, int nz,
+    int nz,
     vector<double>& u, vector<double>& us,
     vector<double>& v
 ) {
-    for (int k = 0; k < nz; k++) {
-        for (int j = 0; j < ny; j++) {
-            for (int i = 0; i < nx; i++) {
-                int p = j + i * ny;
-                int id = k + p * nz;
+    const int np = static_cast<int>(us.size());
 
-                v[id] = u[id] + us[p];
-            }
+    #pragma omp parallel for schedule(static)
+    for (int p = 0; p < np; p++) {
+        for (int k = 0; k < nz; k++) {
+            const int id = k + p * nz;
+
+            v[id] = u[id] + us[p];
         }
     }
+
 }
 
 vector<double> Data::symmetrise(int nx, int ny, vector<double> &v) {
@@ -128,12 +88,12 @@ vector<double> Data::symmetrise(int nx, int ny, vector<double> &v) {
     return vt;
 }
 
-void Data::interpolate(int nx, int ny, double alpha, const vector<double>& vc, const vector<double>& vn, vector<double>& v) {
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int k = j + i * ny;
-
-            v[k] = vc[k] + alpha * (vn[k] - vc[k]);
-        }
+void Data::interpolate(double alpha, const vector<double>& vc, const vector<double>& vn, vector<double>& v) {
+    const int np = static_cast<int>(vc.size());
+    
+    #pragma omp parallel for schedule(static)
+    for (int k = 0; k < np; k++) {
+        v[k] = vc[k] + alpha * (vn[k] - vc[k]);
     }
+
 }

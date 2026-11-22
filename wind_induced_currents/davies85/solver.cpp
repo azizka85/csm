@@ -4,6 +4,11 @@
 
 #include <chrono>
 
+#include <algorithm>
+#include <cmath>
+
+#include <omp.h>
+
 #include <slae/direct/tridiagonal.h>
 
 #include <utils/bathymetry.h>
@@ -22,7 +27,7 @@ Solver::Solver(
 	PhysicalParams phys,
 	double g, double kb,
 	double dx, double dy, bool symmetrise,
-	bool calcNU, bool interpolateWind,
+	bool calcNU, bool interpolateWind, bool writeOutput,
 	double endTime, double outputTimeStep, string outDir,
 	shared_ptr<Calc::Time::IAdjustTimeStep> timeStep,
 	shared_ptr<Generators::Area::IGenerator> areaGenerator,
@@ -43,6 +48,8 @@ Solver::Solver(
 
 	this->calcNU = calcNU;
 	this->interpolateWind = interpolateWind;
+
+	this->writeOutput = writeOutput;
 
 	this->endTime = endTime;
 	this->outputTimeStep = outputTimeStep;
@@ -115,21 +122,20 @@ void Solver::setInitialCondition(
 	vector<double>& va,
 	vector<double>& z
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t p = j + i * ny;
+	const int np = nx * ny;
 
-			for (size_t k = 0; k < nz; k++) {
-				size_t id = k + p * nz;
+	#pragma omp parallel for schedule(static)
+	for (int p = 0; p < np; p++) {
+		for (int k = 0; k < nz; k++) {
+			int id = k + p * nz;
 
-				uf[id] = 0;
-				vf[id] = 0;
-			}
-
-			ua[p] = 0;
-			va[p] = 0;
-			z[p] = 0;
+			uf[id] = 0;
+			vf[id] = 0;
 		}
+
+		ua[p] = 0;
+		va[p] = 0;
+		z[p] = 0;
 	}
 }
 
@@ -148,40 +154,44 @@ void Solver::calcUA(
 	vector<double>& nu,
 	vector<double>& u1a
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t k = j + i * ny;
-			size_t idx = nz - 1 + nz * k;
+	const int np = nx * ny;
 
-			if (h[k] > 0) {
-				size_t nb = nz + k * (nz + 1);
+	#pragma omp parallel for schedule(static)
+	for (int k = 0; k < np; k++) {
+		const int i = k / ny;
+		const int j = k % ny;
+		const int idx = nz - 1 + nz * k;
 
-				double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
-				double ub = (uf[idx] + ua[k]) / (1 + ab);
+		if (h[k] > 0) {
+			const int nb = nz + k * (nz + 1);
 
-				u1a[k] = ua[k] + phys.f * va[k] * dt - kb * dt * ub / h[k] + qx[k] * dt / phys.rho / h[k];
+			double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
+			double ub = (uf[idx] + ua[k]) / (1 + ab);
 
-				size_t kr = k;
-				size_t kl = k;
+			u1a[k] = ua[k] + phys.f * va[k] * dt - kb * dt * ub / h[k] + qx[k] * dt / phys.rho / h[k];
 
-				if (i == 0) {
-					kr = j + ny;
-					kl = j + (nx - 1) * ny;					
-				} else if (i == nx - 1) {
-					kr = j;
-					kl = j + (nx - 2) * ny;
-				} else {
-					kr = j + (i + 1) * ny;
-					kl = j + (i - 1) * ny;
-				}
+			int kr = k;
+			int kl = k;
 
-				double gx = (phys.f * va[k] + qx[k] / phys.rho / h[k]) / g;
-
-				double zr = (h[kr] > 0) ? z[kr] : z[k] + dx * gx;
-				double zl = (h[kl] > 0) ? z[kl] : z[k] - dx * gx;
-
-				u1a[k] -= g * dt * (zr - zl) / 2 / dx;
+			if (i == 0) {
+				kr = j + ny;
+				kl = j + (nx - 1) * ny;
 			}
+			else if (i == nx - 1) {
+				kr = j;
+				kl = j + (nx - 2) * ny;
+			}
+			else {
+				kr = j + (i + 1) * ny;
+				kl = j + (i - 1) * ny;
+			}
+
+			double gx = (phys.f * va[k] + qx[k] / phys.rho / h[k]) / g;
+
+			double zr = (h[kr] > 0) ? z[kr] : z[k] + dx * gx;
+			double zl = (h[kl] > 0) ? z[kl] : z[k] - dx * gx;
+
+			u1a[k] -= g * dt * (zr - zl) / 2 / dx;
 		}
 	}
 }
@@ -201,41 +211,44 @@ void Solver::calcVA(
 	vector<double>& nu,
 	vector<double>& v1a
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t k = j + i * ny;
-			size_t idx = nz - 1 + nz * k;
+	const int np = nx * ny;
 
-			if (h[k] > 0) {
-				size_t nb = nz + k * (nz + 1);
+	#pragma omp parallel for schedule(static)
+	for (int k = 0; k < np; k++) {
+		const int i = k / ny;
+		const int j = k % ny;
+		const int idx = nz - 1 + nz * k;
 
-				double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
-				double vb = (vf[idx] + va[k]) / (1 + ab);
+		if (h[k] > 0) {
+			const int nb = nz + k * (nz + 1);
 
-				v1a[k] = va[k] - phys.f * ua[k] * dt - kb * dt * vb / h[k] + qy[k] * dt / phys.rho / h[k];
+			double ab = kb * h[k] * dz[nz - 1] / 2 / nu[nb];
+			double vb = (vf[idx] + va[k]) / (1 + ab);
 
-				size_t ku = k;
-				size_t kd = k;
+			v1a[k] = va[k] - phys.f * ua[k] * dt - kb * dt * vb / h[k] + qy[k] * dt / phys.rho / h[k];
 
-				if (j == 0) {
-					ku = 1 + i * ny;
-					kd = ny - 1 + i * ny;
-				}
-				else if (j == ny - 1) {
-					ku = i * ny;
-					kd = ny - 2 + i * ny;
-				} else {
-					ku = j + 1 + i * ny;
-					kd = j - 1 + i * ny;					
-				}
+			int ku = k;
+			int kd = k;
 
-				double gy = (-phys.f * ua[k] + qy[k] / phys.rho / h[k]) / g;
-
-				double zu = (h[ku] > 0) ? z[ku] : z[k] + dy * gy;
-				double zd = (h[kd] > 0) ? z[kd] : z[k] - dy * gy;
-
-				v1a[k] -= g * dt * (zu - zd) / 2 / dy;
+			if (j == 0) {
+				ku = 1 + i * ny;
+				kd = ny - 1 + i * ny;
 			}
+			else if (j == ny - 1) {
+				ku = i * ny;
+				kd = ny - 2 + i * ny;
+			}
+			else {
+				ku = j + 1 + i * ny;
+				kd = j - 1 + i * ny;
+			}
+
+			double gy = (-phys.f * ua[k] + qy[k] / phys.rho / h[k]) / g;
+
+			double zu = (h[ku] > 0) ? z[ku] : z[k] + dy * gy;
+			double zd = (h[kd] > 0) ? z[kd] : z[k] - dy * gy;
+
+			v1a[k] -= g * dt * (zu - zd) / 2 / dy;
 		}
 	}
 }
@@ -250,37 +263,36 @@ void Solver::createTridiagonalMatrix(
 	vector<double>& ac, 
 	vector<double>& ar
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t p = j + i * ny;
+	const int np = nx * ny;
 
-			if (h[p] > 0) {
-				for (size_t k = 0; k < nz; k++) {
-					size_t id = k + p * nz;
-					size_t idu = k + 1 + p * nz;
+	#pragma omp parallel for schedule(static)
+	for (int p = 0; p < np; p++) {
+		if (h[p] > 0) {
+			for (int k = 0; k < nz; k++) {
+				int id = k + p * nz;
+				int idu = k + 1 + p * nz;
 
-					size_t nid = k + p * (nz + 1);
-					size_t nidu = k + 1 + p * (nz + 1);
+				int nid = k + p * (nz + 1);
+				int nidu = k + 1 + p * (nz + 1);
 
-					if (k == 0) {
-						ac[id] = 1 + dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
-						ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
-					}
-					else if (k == nz - 1) {
-						al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
-						ac[id] = 1 + dt * (
-							kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]) / 2 / dz[k] +
-							nu[nid] / (dz[k] + dz[k - 1])
+				if (k == 0) {
+					ac[id] = 1 + dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+					ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
+				}
+				else if (k == nz - 1) {
+					al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+					ac[id] = 1 + dt * (
+						kb * h[p] * dz[k] / (1 + kb * h[p] * dz[k] / 2 / nu[nidu]) / 2 / dz[k] +
+						nu[nid] / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k];
-					}
-					else {
-						al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
-						ac[id] = 1 + dt * (
-							nu[nidu] / (dz[k + 1] + dz[k]) +
-							nu[nid] / (dz[k] + dz[k - 1])
+				}
+				else {
+					al[id] = -dt * nu[nid] / h[p] / h[p] / dz[k] / (dz[k] + dz[k - 1]);
+					ac[id] = 1 + dt * (
+						nu[nidu] / (dz[k + 1] + dz[k]) +
+						nu[nid] / (dz[k] + dz[k - 1])
 						) / h[p] / h[p] / dz[k];
-						ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
-					}
+					ar[id] = -dt * nu[nidu] / h[p] / h[p] / dz[k] / (dz[k + 1] + dz[k]);
 				}
 			}
 		}
@@ -300,47 +312,46 @@ void Solver::calcRHSU(
 	const vector<double>& vf,
 	vector<double>& ud
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t p = j + i * ny;
+	const int np = nx * ny;
 
-			if (h[p] > 0) {
-				for (size_t k = 0; k < nz; k++) {
-					size_t id = k + p * nz;
-					size_t idu = k + 1 + p * nz;
-					size_t idd = k - 1 + p * nz;
-					size_t idb = nz - 1 + p * nz;
+	#pragma omp parallel for schedule(static)
+	for (int p = 0; p < np; p++) {
+		if (h[p] > 0) {
+			for (int k = 0; k < nz; k++) {
+				int id = k + p * nz;
+				int idu = k + 1 + p * nz;
+				int idd = k - 1 + p * nz;
+				int idb = nz - 1 + p * nz;
 
-					size_t nid = k + p * (nz + 1);
-					size_t nidu = k + 1 + p * (nz + 1);
-					size_t nb = nz + p * (nz + 1);
+				int nid = k + p * (nz + 1);
+				int nidu = k + 1 + p * (nz + 1);
+				int nb = nz + p * (nz + 1);
 
-					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
-					double ub = (uf[idb] + ua[p]) / (1 + ab);
+				double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
+				double ub = (uf[idb] + ua[p]) / (1 + ab);
 
-					double visc;
+				double visc;
 
-					if (k == 0) {
-						double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[nid];
-						visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - um1) / 2 / dz[k];
-					}
-					else if (k == nz - 1) {
-						double un = (uf[id] - ab * uf[id] - 2 * ab * ua[p]) / (1 + ab);
-						visc = nu[nidu] * (un - uf[id]) / 2 / dz[k] - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
-					}
-					else {
-						visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
-					}
-
-					ud[id] = uf[id] + phys.f * vf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
-						+ kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p];
-
-					if (k == 0)      ud[id] += dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
-					if (k == nz - 1) ud[id] -= dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + ab);
+				if (k == 0) {
+					double um1 = uf[id] + h[p] * qx[p] * dz[k] / phys.rho / nu[nid];
+					visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - um1) / 2 / dz[k];
 				}
+				else if (k == nz - 1) {
+					double un = (uf[id] - ab * uf[id] - 2 * ab * ua[p]) / (1 + ab);
+					visc = nu[nidu] * (un - uf[id]) / 2 / dz[k] - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
+				}
+				else {
+					visc = nu[nidu] * (uf[idu] - uf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (uf[id] - uf[idd]) / (dz[k] + dz[k - 1]);
+				}
+
+				ud[id] = uf[id] + phys.f * vf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
+					+ kb * ub * dt / h[p] - qx[p] * dt / phys.rho / h[p];
+
+				if (k == 0)      ud[id] += dt * qx[p] / phys.rho / h[p] / 2 / dz[k];
+				if (k == nz - 1) ud[id] -= dt * kb * ua[p] / h[p] / 2 / dz[k] / (1 + ab);
 			}
 		}
-	}
+	}	
 }
 
 void Solver::calcRHSV(
@@ -356,46 +367,45 @@ void Solver::calcRHSV(
 	const vector<double>& vf,
 	vector<double>& vd
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t p = j + i * ny;
+	const int np = nx * ny;
 
-			if (h[p] > 0) {
-				for (size_t k = 0; k < nz; k++) {
-					size_t id = k + p * nz;
-					size_t idu = k + 1 + p * nz;
-					size_t idd = k - 1 + p * nz;
-					size_t idb = nz - 1 + p * nz;
+	#pragma omp parallel for schedule(static)
+	for (int p = 0; p < np; p++) {
+		if (h[p] > 0) {
+			for (int k = 0; k < nz; k++) {
+				int id = k + p * nz;
+				int idu = k + 1 + p * nz;
+				int idd = k - 1 + p * nz;
+				int idb = nz - 1 + p * nz;
 
-					size_t nid = k + p * (nz + 1);
-					size_t nidu = k + 1 + p * (nz + 1);
-					size_t nb = nz + p * (nz + 1);
+				int nid = k + p * (nz + 1);
+				int nidu = k + 1 + p * (nz + 1);
+				int nb = nz + p * (nz + 1);
 
-					double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
-					double vb = (vf[idb] + va[p]) / (1 + ab);
+				double ab = kb * h[p] * dz[nz - 1] / 2 / nu[nb];
+				double vb = (vf[idb] + va[p]) / (1 + ab);
 
-					double visc;
+				double visc;
 
-					if (k == 0) {
-						double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[nid];
-						visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vm1) / 2 / dz[k];
-					}
-					else if (k == nz - 1) {
-						double vn = (vf[id] - ab * vf[id] - 2 * ab * va[p]) / (1 + ab);
-						visc = nu[nidu] * (vn - vf[id]) / 2 / dz[k] - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
-					}
-					else {
-						visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
-					}
-
-					vd[id] = vf[id] - phys.f * uf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
-						+ kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p];
-
-					if (k == 0)      vd[id] += dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
-					if (k == nz - 1) vd[id] -= dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + ab);
+				if (k == 0) {
+					double vm1 = vf[id] + h[p] * qy[p] * dz[k] / phys.rho / nu[nid];
+					visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vm1) / 2 / dz[k];
 				}
+				else if (k == nz - 1) {
+					double vn = (vf[id] - ab * vf[id] - 2 * ab * va[p]) / (1 + ab);
+					visc = nu[nidu] * (vn - vf[id]) / 2 / dz[k] - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
+				}
+				else {
+					visc = nu[nidu] * (vf[idu] - vf[id]) / (dz[k + 1] + dz[k]) - nu[nid] * (vf[id] - vf[idd]) / (dz[k] + dz[k - 1]);
+				}
+
+				vd[id] = vf[id] - phys.f * uf[id] * dt + dt * visc / h[p] / h[p] / dz[k]
+					+ kb * vb * dt / h[p] - qy[p] * dt / phys.rho / h[p];
+
+				if (k == 0)      vd[id] += dt * qy[p] / phys.rho / h[p] / 2 / dz[k];
+				if (k == nz - 1) vd[id] -= dt * kb * va[p] / h[p] / 2 / dz[k] / (1 + ab);
 			}
-		}
+		}	
 	}
 }
 
@@ -409,38 +419,37 @@ void Solver::solveColumn(
 	vector<double>& d, 
 	vector<double>& x
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t k = j + i * ny;			
+	const int np = nx * ny;
 
-			if (h[k] > 0) {
-				Tridiagonal::Matrix matrix(
-					Tridiagonal::MatrixParams{
-						.l = span<double>(al.data() + k * nz, nz),
-						.c = span<double>(ac.data() + k * nz, nz),
-						.r = span<double>(ar.data() + k * nz, nz)
-					}
+	#pragma omp parallel for schedule(static)
+	for (int k = 0; k < np; k++) {
+		if (h[k] > 0) {
+			Tridiagonal::Matrix matrix(
+				Tridiagonal::MatrixParams{
+					.l = span<double>(al.data() + k * nz, nz),
+					.c = span<double>(ac.data() + k * nz, nz),
+					.r = span<double>(ar.data() + k * nz, nz)
+				}
+			);
+
+			matrix.solve(
+				Tridiagonal::SolutionState{
+					.u = span<double>(x.data() + k * nz, nz),
+					.d = span<double>(d.data() + k * nz, nz),
+				}
 				);
 
-				matrix.solve(
-					Tridiagonal::SolutionState{
-						.u = span<double>(x.data() + k * nz, nz),
-						.d = span<double>(d.data() + k * nz, nz),
-					}
-				);
+			double m = 0, s = 0;
 
-				double m = 0, s = 0;
+			for (int l = 0; l < nz; l++) {
+				m += dz[l] * x[k * nz + l];
+				s += dz[l];
+			}
 
-				for (size_t l = 0; l < nz; l++) {
-					m += dz[l] * x[k*nz + l];
-					s += dz[l];
-				}
+			m /= s;
 
-				m /= s;
-
-				for (size_t l = 0; l < nz; l++) {
-					x[k*nz + l] -= m;
-				}
+			for (int l = 0; l < nz; l++) {
+				x[k * nz + l] -= m;
 			}
 		}
 	}
@@ -454,86 +463,88 @@ void Solver::calcZ(
 	vector<double>& va, 
 	vector<double>& z
 ) {
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			size_t k = j + i * ny;
+	const int np = nx * ny;
 
-			if (h[k] > 0) {
-				size_t kr = j + (i + 1) * ny;
-				size_t kl = j + (i - 1) * ny;
+	#pragma omp parallel for schedule(static)
+	for (int k = 0; k < np; k++) {
+		const int i = k / ny;
+		const int j = k % ny;
 
-				size_t ku = j + 1 + i * ny;
-				size_t kd = j - 1 + i * ny;
+		if (h[k] > 0) {
+			int kr = j + (i + 1) * ny;
+			int kl = j + (i - 1) * ny;
 
-				if (i == 0) {
-					if (j == 0) {
-						kr = ny;
-						kl = (nx - 1) * ny;
+			int ku = j + 1 + i * ny;
+			int kd = j - 1 + i * ny;
 
-						ku = 1;
-						kd = ny - 1;
-					}
-					else if (j == ny - 1) {
-						kr = ny - 1 + ny;
-						kl = ny - 1 + (nx - 1) * ny;
+			if (i == 0) {
+				if (j == 0) {
+					kr = ny;
+					kl = (nx - 1) * ny;
 
-						ku = 0;
-						kd = ny - 2;
-					}
-					else {
-						kr = j + ny;
-						kl = j + (nx - 1) * ny;
-
-						ku = j + 1;
-						kd = j - 1;
-					}
-				}
-				else if (i == nx - 1) {
-					if (j == 0) {
-						kr = 0;
-						kl = (nx - 2) * ny;
-
-						ku = 1 + (nx - 1) * ny;
-						kd = ny - 1 + (nx - 1) * ny;
-					}
-					else if (j == ny - 1) {
-						kr = ny - 1;
-						kl = ny - 1 + (nx - 2) * ny;
-
-						ku = (nx - 1) * ny;
-						kd = ny - 2 + (nx - 1) * ny;;
-					}
-					else {
-						kr = j;
-						kl = j + (nx - 2) * ny;
-
-						ku = j + 1 + (nx - 1) * ny;
-						kd = j - 1 + (nx - 1) * ny;
-					}
-				}
-				else if (j == 0) {
-					kr = (i + 1) * ny;
-					kl = (i - 1) * ny;
-
-					ku = 1 + i * ny;
-					kd = ny - 1 + i * ny;
+					ku = 1;
+					kd = ny - 1;
 				}
 				else if (j == ny - 1) {
-					kr = ny - 1 + (i + 1) * ny;
-					kl = ny - 1 + (i - 1) * ny;
+					kr = ny - 1 + ny;
+					kl = ny - 1 + (nx - 1) * ny;
 
-					ku = i * ny;
-					kd = ny - 2 + i * ny;
+					ku = 0;
+					kd = ny - 2;
 				}
+				else {
+					kr = j + ny;
+					kl = j + (nx - 1) * ny;
 
-				double qr = (h[kr] > 0) ? h[kr] * ua[kr] : -h[k] * ua[k];
-				double ql = (h[kl] > 0) ? h[kl] * ua[kl] : -h[k] * ua[k];
-				double qu = (h[ku] > 0) ? h[ku] * va[ku] : -h[k] * va[k];
-				double qd = (h[kd] > 0) ? h[kd] * va[kd] : -h[k] * va[k];
-
-				z[k] -= dt * (qr - ql) / 2 / dx;
-				z[k] -= dt * (qu - qd) / 2 / dy;
+					ku = j + 1;
+					kd = j - 1;
+				}
 			}
+			else if (i == nx - 1) {
+				if (j == 0) {
+					kr = 0;
+					kl = (nx - 2) * ny;
+
+					ku = 1 + (nx - 1) * ny;
+					kd = ny - 1 + (nx - 1) * ny;
+				}
+				else if (j == ny - 1) {
+					kr = ny - 1;
+					kl = ny - 1 + (nx - 2) * ny;
+
+					ku = (nx - 1) * ny;
+					kd = ny - 2 + (nx - 1) * ny;;
+				}
+				else {
+					kr = j;
+					kl = j + (nx - 2) * ny;
+
+					ku = j + 1 + (nx - 1) * ny;
+					kd = j - 1 + (nx - 1) * ny;
+				}
+			}
+			else if (j == 0) {
+				kr = (i + 1) * ny;
+				kl = (i - 1) * ny;
+
+				ku = 1 + i * ny;
+				kd = ny - 1 + i * ny;
+			}
+			else if (j == ny - 1) {
+				kr = ny - 1 + (i + 1) * ny;
+				kl = ny - 1 + (i - 1) * ny;
+
+				ku = i * ny;
+				kd = ny - 2 + i * ny;
+			}
+
+			double qr = (h[kr] > 0) ? h[kr] * ua[kr] : -h[k] * ua[k];
+			double ql = (h[kl] > 0) ? h[kl] * ua[kl] : -h[k] * ua[k];
+			double qu = (h[ku] > 0) ? h[ku] * va[ku] : -h[k] * va[k];
+			double qd = (h[kd] > 0) ? h[kd] * va[kd] : -h[k] * va[k];
+
+			z[k] -= dt * (qr - ql) / 2 / dx;
+			z[k] -= dt * (qu - qd) / 2 / dy;
 		}
 	}
 }
@@ -551,41 +562,40 @@ double Solver::maxAbsResidual(
 ) {
 	double maxRes = 0;
 
-	for (int i = 0; i < nx; i++) {
-		for (int j = 0; j < ny; j++) {
-			int k = j + i * ny;
+	const int np = nx * ny;
 
-			if (h[k] > 0) {
-				Tridiagonal::Matrix matrix(
-					Tridiagonal::MatrixParams{
-						.l = span<double>(al.data() + k * nz, nz),
-						.c = span<double>(ac.data() + k * nz, nz),
-						.r = span<double>(ar.data() + k * nz, nz)
-					}
-				);
-
-				Tridiagonal::ResidualState res{
-					.u = span<double>(uf.data() + k * nz, nz),
-					.d = span<double>(ud.data() + k * nz, nz),
-				};
-
-				matrix.residual(res);
-
-				for (int k = 0; k < nz; k++) {
-					maxRes = max(maxRes, abs(res.d[k]));
+	#pragma omp parallel for schedule(static) reduction(max:maxRes)
+	for (int k = 0; k < np; k++) {
+		if (h[k] > 0) {
+			Tridiagonal::Matrix matrix(
+				Tridiagonal::MatrixParams{
+					.l = span<double>(al.data() + k * nz, nz),
+					.c = span<double>(ac.data() + k * nz, nz),
+					.r = span<double>(ar.data() + k * nz, nz)
 				}
+			);
 
-				res = Tridiagonal::ResidualState{
-					.u = span<double>(vf.data() + k * nz, nz),
-					.d = span<double>(vd.data() + k * nz, nz),
-				};
+			Tridiagonal::ResidualState res{
+				.u = span<double>(uf.data() + k * nz, nz),
+				.d = span<double>(ud.data() + k * nz, nz),
+			};
 
-				matrix.residual(res);
+			matrix.residual(res);
 
-				for (int k = 0; k < nz; k++) {
-					maxRes = max(maxRes, abs(res.d[k]));
-				}
-			}			
+			for (int l = 0; l < nz; l++) {
+				maxRes = max(maxRes, abs(res.d[l]));
+			}
+
+			res = Tridiagonal::ResidualState{
+				.u = span<double>(vf.data() + k * nz, nz),
+				.d = span<double>(vd.data() + k * nz, nz),
+			};
+
+			matrix.residual(res);
+
+			for (int l = 0; l < nz; l++) {
+				maxRes = max(maxRes, abs(res.d[l]));
+			}
 		}
 	}
 
@@ -607,11 +617,11 @@ void Solver::interpolateQUV10(
 	vector<double>& qx,
 	vector<double>& qy
 ) {
-	Utils::Data::interpolate(nx, ny, alpha, u10c, u10n, u10);
-	Utils::Data::interpolate(nx, ny, alpha, v10c, v10n, v10);
+	Utils::Data::interpolate(alpha, u10c, u10n, u10);
+	Utils::Data::interpolate(alpha, v10c, v10n, v10);
 
-	Utils::Data::interpolate(nx, ny, alpha, qxc, qxn, qx);
-	Utils::Data::interpolate(nx, ny, alpha, qyc, qyn, qy);
+	Utils::Data::interpolate(alpha, qxc, qxn, qx);
+	Utils::Data::interpolate(alpha, qyc, qyn, qy);
 }
 
 void Solver::writeData(
@@ -664,8 +674,8 @@ void Solver::writeData(
 		dirs.surface
 	);
 
-	Utils::Data::volumePlusSurface(nx, ny, volume.nz, uf, ua, u);
-	Utils::Data::volumePlusSurface(nx, ny, volume.nz, vf, va, v);
+	Utils::Data::volumePlusSurface(volume.nz, uf, ua, u);
+	Utils::Data::volumePlusSurface(volume.nz, vf, va, v);
 
 	volumeElemWriter.write(
 		TimeState{ .m = time.m, .t = time.t },
@@ -798,7 +808,7 @@ void Solver::solve() {
 		}
 	);
 
-	double nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+	double nuMax = Utils::Viscosity::maxNU(nu);
 
 	double dt = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
 
@@ -809,9 +819,9 @@ void Solver::solve() {
 	vector<double> up(nx * ny * nz);
 	vector<double> vp(nx * ny * nz);
 
-	Utils::Data::updateData(nx, ny, zp, z);
-	Utils::Data::updateData(nx, ny, nz, up, uf);
-	Utils::Data::updateData(nx, ny, nz, vp, vf);
+	Utils::Data::parallelUpdateData(z, zp);
+	Utils::Data::parallelUpdateData(uf, up);
+	Utils::Data::parallelUpdateData(vf, vp);
 
 	double t = 0;
 	double tn = outputTimeStep;
@@ -836,37 +846,49 @@ void Solver::solve() {
 	Writers::Volume::Writer volumeElemWriter("", Writers::Utils::writeVolumeElemHeader);
 	Writers::Volume::Writer volumeNodeWriter("", Writers::Utils::writeVolumeNodeHeader);
 
-	heightWriter.write(
-		TimeState{ .m = m, .t = t },
-		SurfaceState{ .nx = symmetrise ? nx / 2 : nx, .ny = symmetrise ? ny / 2 : ny, .bathymetry = bathymetry }, {
-			Column { .name = "h", .precision = 3 }
-		}, {
-			Scalar{ .v = bathymetry.h }
-		},
-		dirs.root
-	);
+	if (writeOutput) {
+		heightWriter.write(
+			TimeState{ .m = m, .t = t },
+			SurfaceState{ .nx = symmetrise ? nx / 2 : nx, .ny = symmetrise ? ny / 2 : ny, .bathymetry = bathymetry }, {
+				Column {.name = "h", .precision = 3 }
+			}, {
+				Scalar{.v = bathymetry.h }
+			},
+			dirs.root
+		);
+	}
 
 	VolumeState volume = { .nx = nx, .ny = ny, .nz = nz, .dz = dz, .bathymetry = bathymetry };
 
-	writeData(
-		TimeState{ .m = m, .t = t },
-		volume,
-		WindCurrent{
-			.speed = windSpeed,
-			.stress = windStress,
-			.current = current
-		},
-		z,
-		dirs,
-		uf, ua, u,
-		vf, va, v,
-		w, nu,
-		surfaceWriter,
-		volumeElemWriter,
-		volumeNodeWriter
-	);
+	if (writeOutput) {
+		writeData(
+			TimeState{ .m = m, .t = t },
+			volume,
+			WindCurrent{
+				.speed = windSpeed,
+				.stress = windStress,
+				.current = current
+			},
+			z,
+			dirs,
+			uf, ua, u,
+			vf, va, v,
+			w, nu,
+			surfaceWriter,
+			volumeElemWriter,
+			volumeNodeWriter
+		);
+	}
 
 	long long calcTime = 0;
+
+#ifdef _OPENMP
+	std::cout << format("OpenMP version macro: {}", _OPENMP) << endl;
+#else
+	std::cout << "OpenMP is NOT enabled" << endl;
+#endif
+
+	std::cout << format("OpenMP threads: {}", omp_get_max_threads()) << endl;
 
 	auto start = high_resolution_clock::now();
 
@@ -908,13 +930,13 @@ void Solver::solve() {
 
 		calcRHSU(nx, ny, nz, phys, kb, dtStep, dz, bathymetry.h, nu, windStress.qx, ua, uf, vf, ud);
 
-		udt = ud;
+		Utils::Data::parallelUpdateData(ud, udt);
 
 		solveColumn(nx, ny, nz, bathymetry.h, dz, al, ac, ar, ud, uf);
 
 		calcRHSV(nx, ny, nz, phys, kb, dtStep, dz, bathymetry.h, nu, windStress.qy, va, uf, vf, vd);
 
-		vdt = vd;
+		Utils::Data::parallelUpdateData(vd, vdt);
 
 		solveColumn(nx, ny, nz, bathymetry.h, dz, al, ac, ar, vd, vf);
 
@@ -988,7 +1010,7 @@ void Solver::solve() {
 				}
 			);
 
-			nuMax = Utils::Viscosity::maxNU(nu, nx, ny, nz + 1);
+			nuMax = Utils::Viscosity::maxNU(nu);
 		}
 
 		double dt1 = min(dtMax, hMin * dzMin * hMin * dzMin / 2 / nuMax);
@@ -1021,27 +1043,29 @@ void Solver::solve() {
 
 			calcTime += duration;		
 
-			writeData(
-				TimeState{ .m = m, .t = t },
-				volume,
-				WindCurrent{
-					.speed = windSpeed,
-					.stress = windStress,
-					.current = currentData
-				},
-				z,
-				dirs,
-				uf, ua, u,
-				vf, va, v,
-				w, nu,
-				surfaceWriter,
-				volumeElemWriter,
-				volumeNodeWriter
-			);
+			if (writeOutput) {
+				writeData(
+					TimeState{ .m = m, .t = t },
+					volume,
+					WindCurrent{
+						.speed = windSpeed,
+						.stress = windStress,
+						.current = currentData
+					},
+					z,
+					dirs,
+					uf, ua, u,
+					vf, va, v,
+					w, nu,
+					surfaceWriter,
+					volumeElemWriter,
+					volumeNodeWriter
+				);
+			}
 
-			auto umd = Utils::Data::maxAbsDifference(nx, ny, nz, up, uf);
-			auto vmd = Utils::Data::maxAbsDifference(nx, ny, nz, vp, vf);
-			auto zm = Utils::Data::maxAbsDifference(nx, ny, zp, z);
+			auto umd = Utils::Data::maxAbsDifference(up, uf);
+			auto vmd = Utils::Data::maxAbsDifference(vp, vf);
+			auto zm = Utils::Data::maxAbsDifference(zp, z);
 
 			auto maxRes = maxAbsResidual(nx, ny, nz, bathymetry.h, al, ac, ar, uf, vf, udt, vdt);
 
@@ -1052,9 +1076,9 @@ void Solver::solve() {
 
 			statistics.push_back({ (double)n, tn, (double)(calcTime / 1000), maxRes, umd, vmd, zm });
 
-			Utils::Data::updateData(nx, ny, zp, z);
-			Utils::Data::updateData(nx, ny, nz, up, uf);
-			Utils::Data::updateData(nx, ny, nz, vp, vf);
+			Utils::Data::parallelUpdateData(z, zp);
+			Utils::Data::parallelUpdateData(uf, up);
+			Utils::Data::parallelUpdateData(vf, vp);
 
 			m += 1;
 			tn += outputTimeStep;

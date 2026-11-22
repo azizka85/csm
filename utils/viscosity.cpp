@@ -1,20 +1,18 @@
+#include <algorithm>
+#include <cmath>
+
 #include "viscosity.h"
 
 using namespace Utils;
 
-double Viscosity::maxNU(vector<double>& nu, int nx, int ny, int nz) {
+double Viscosity::maxNU(vector<double>& nu) {
     double nuMax = nu[0];
 
-    for (int i = 0; i < nx; i++) {
-        for (int j = 0; j < ny; j++) {
-            int p = j + i * ny;
+	const int np = static_cast<int>(nu.size());
 
-            for (int k = 0; k < nz; k++) {
-                int id = k + p * nz;
-
-                nuMax = max(nuMax, nu[id]);
-            }
-        }
+    #pragma omp parallel for schedule(static) reduction(max:nuMax)
+    for (int k = 0; k < np; k++) {
+        nuMax = max(nuMax, nu[k]);
     }
 
     return nuMax;

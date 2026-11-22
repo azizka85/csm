@@ -15,7 +15,7 @@ using namespace WindInducedCurrents::Davies85;
 int main() {
 	const double b = 1.1;
 
-	const double f = 0.98e-4;
+	const double f = 1.2e-4;
 	const double g = 9.81;
 	const double rho = 1025;
 	const double kb = 0.002;
@@ -61,13 +61,20 @@ int main() {
 	const double qxm = 1.5;
 	const double qym = 1.5;
 
-	const double endTime = 60000;
+	const double endTime = 48000;
 	const double outputTimeStep = 600;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
 	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
 
 	const string outDir = "out";
+
+	bool calcNU = false;
+	bool interpolateWind = false;
+
+	bool writeOutput = false;
+
+	bool symmetrise = false;
 
 	try {
 		auto timeStep = make_shared<Calc::Time::DefaultAdjustTimeStep>(
@@ -91,15 +98,10 @@ int main() {
 
 		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
 
-		bool calcNU = false;
-		bool interpolateWind = false;
-
-		bool symmetrise = false;
-
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},
 			g, kb, 
-			dx, dy, symmetrise, calcNU, interpolateWind,
+			dx, dy, symmetrise, calcNU, interpolateWind, writeOutput,
 			endTime, outputTimeStep, outDir,
 			timeStep, 
 			areaGenerator,
