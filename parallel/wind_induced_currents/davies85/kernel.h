@@ -43,6 +43,8 @@ namespace Parallel::WindInducedCurrents::Davies85 {
 		virtual void updateNU() = 0;
 
 		virtual path addDirectory(path outDir) = 0;
+
+		virtual void finish() = 0;
 	};
 }
 

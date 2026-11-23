@@ -3,7 +3,7 @@
 #include <calc/time.h>
 
 #include <generators/area/uniform_generator.h>
-#include <generators/dz/uniform_generator.h>
+#include <generators/dz/triple_point_generator.h>
 #include <generators/bathymetry/uniform_generator.h>
 #include <generators/wind/uniform_generator.h>
 #include <generators/viscosity/uniform_generator.h>
@@ -50,8 +50,8 @@ int main() {
 	const double nut = 0.005;
 	const double nu0 = 1.15e-6;
 
-	const double w = 260;
-	const double l = 260;
+	const double w = 4160;
+	const double l = 4160;
 
 	const double hm = 260;
 
@@ -61,8 +61,8 @@ int main() {
 	const double qxm = 1.5;
 	const double qym = 1.5;
 
-	const double endTime = 48000;
-	const double outputTimeStep = 600;
+	const double endTime = 165;
+	const double outputTimeStep = 15;
 
 	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
 	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
@@ -85,7 +85,17 @@ int main() {
 		);
 
 		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
-		auto dzGenerator = make_shared<Generators::DZ::UniformGenerator>(dzMin);
+		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
+			Generators::DZ::TriplePointGeneratorParams{
+				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
+					Calc::Grid::TriplePointVerticalStepSizeParams {
+						.zm = zm,
+						.dzMin = dzMin,
+						.dzMax = dzMax
+					}
+				)
+			}
+		);
 
 		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
 

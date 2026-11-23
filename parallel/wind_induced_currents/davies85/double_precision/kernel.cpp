@@ -517,3 +517,7 @@ void Kernel::updateNU() {
 path Kernel::addDirectory(path outDir) {
 	return outDir / path("dp");
 }
+
+void Kernel::finish() {
+	queue.finish();
+}

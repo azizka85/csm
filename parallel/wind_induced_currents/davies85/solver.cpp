@@ -455,6 +455,8 @@ void Solver::solve() {
 		}
 
 		if (t >= tn) {
+			kernel->finish();
+
 			auto end = high_resolution_clock::now();
 
 			auto duration = duration_cast<milliseconds>(end - start).count();

@@ -145,7 +145,9 @@ namespace Parallel::WindInducedCurrents::Davies85::SinglePrecision {
 		double calcNUMax() override;
 		void updateNU() override;
 
-		path addDirectory(path outDir) override;		
+		path addDirectory(path outDir) override;	
+
+		void finish() override;
 };
 }
 
