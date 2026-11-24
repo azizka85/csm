@@ -2,11 +2,11 @@
 
 #include <calc/time.h>
 
-#include <generators/area/uniform_generator.h>
+#include <generators/area/proj_generator.h>
 #include <generators/dz/triple_point_generator.h>
-#include <generators/bathymetry/uniform_generator.h>
-#include <generators/wind/uniform_generator.h>
-#include <generators/viscosity/uniform_generator.h>
+#include <generators/bathymetry/gebco_generator.h>
+#include <generators/wind/ecmwf_generator.h>
+#include <generators/viscosity/wind_speed_generator.h>
 
 #include "solver.h"
 
@@ -15,14 +15,14 @@ using namespace WindInducedCurrents::Davies85;
 int main() {
 	const double b = 1.1;
 
-	const double f = 1.2e-4;
+	const double f = 0.98e-4;
 	const double g = 9.81;
 	const double rho = 1025;
 	const double kb = 0.002;
 
 	const double k0 = 0.4;
 	const double k = 2e-5;
-	const double sigma = 1.2e-4;
+	const double sigma = 1e-4;
 
 	const double rhoAir = 1.225;
 	const double Cd = 2.5e-3;
@@ -33,11 +33,11 @@ int main() {
 	const double lonMin = 46;
 	const double lonMax = 56;
 
-	double refDepth = -25;
-	double minDepth = 5;
+	const double refDepth = -29.5;
+	const double minDepth = 2;
 
-	const double dx = 13;
-	const double dy = 13;
+	const double dx = 6500;
+	const double dy = 6500;
 
 	const double dzMin = 0.002;
 	const double dzMax = 0.1;
@@ -61,20 +61,20 @@ int main() {
 	const double qxm = 1.5;
 	const double qym = 1.5;
 
-	const double endTime = 165;
-	const double outputTimeStep = 15;
+	const double endTime = 7862400;
+	const double outputTimeStep = 3600;
 
-	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47.0_s36.0_w46.0_e56.0.nc";
-	const string ecmwfFilePath = "data/wind/ecmwf_2026_07_31_n47_e56_s36_w46.nc";
+	const string gebcoFilePath = "data/bathymetry/gebco_2026_n47_s36_w46_e56.nc";
+	const string ecmwfFilePath = "data/wind/ecmwf_2025_09_11_n47_e56_s36_w46.nc";
 
 	const string outDir = "out";
 
-	bool calcNU = false;
-	bool interpolateWind = false;
+	const bool calcNU = true;
+	const bool interpolateWind = true;
 
-	bool writeOutput = false;
+	const bool writeOutput = false;
 
-	bool symmetrise = false;
+	const bool symmetrise = false;
 
 	try {
 		auto timeStep = make_shared<Calc::Time::DefaultAdjustTimeStep>(
@@ -84,7 +84,15 @@ int main() {
 			}
 		);
 
-		auto areaGenerator = make_shared<Generators::Area::UniformGenerator>(Generators::Area::Geometry{ .l = l, .w = w });
+		Calc::Data::GeoBound geoBound{
+				.latMin = latMin,
+				.lonMin = lonMin,
+
+				.latMax = latMax,
+				.lonMax = lonMax
+		};
+
+		auto areaGenerator = make_shared<Generators::Area::ProjGenerator>(geoBound);
 		auto dzGenerator = make_shared<Generators::DZ::TriplePointGenerator>(
 			Generators::DZ::TriplePointGeneratorParams{
 				.vertStep = make_shared<Calc::Grid::TriplePointVerticalStepSize>(
@@ -97,16 +105,47 @@ int main() {
 			}
 		);
 
-		auto hGenerator = make_shared<Generators::Bathymetry::UniformGenerator>(hm);
-
-		auto qGenerator = make_shared<Generators::Wind::UniformGenerator>(
-			Generators::Wind::UniformGeneratorParams{
-				.speed = Calc::Wind::SpeedVector { .u10 = u10m, .v10 = v10m },
-				.stress = Calc::Wind::StressVector { .qx = qxm, .qy = qym }
+		auto hGenerator = make_shared<Generators::Bathymetry::GEBCOGenerator>(
+			Generators::Bathymetry::GEBCOGeneratorParams{
+				.bound = geoBound,
+				.refDepth = refDepth,
+				.minDepth = minDepth,
+				.filePath = gebcoFilePath
 			}
 		);
 
-		auto nuGenerator = make_shared<Generators::Viscosity::UniformGenerator>(num);
+		auto qGenerator = make_shared<Generators::Wind::ECMWFGenerator>(
+			Generators::Wind::ECMWFGeneratorParams{
+				.bound = geoBound,
+				.windStress = make_shared<Calc::Wind::DefaultStress>(
+					Calc::Wind::DefaultStressParams {
+						.rhoAir = rhoAir,
+						.cd = Cd
+					}
+				),
+				.filePath = ecmwfFilePath
+			}
+		);
+
+		PhysicalParams phys{ .rho = rho, .f = f };
+
+		Calc::Turbulence::Params turbulence{
+			.k0 = k0,
+			.k = k,
+			.sigma = sigma,
+			.num = nu0
+		};
+
+		auto viscosity = make_shared<Calc::Turbulence::DefaultViscosity>(
+			Calc::Turbulence::DefaultViscosityParams{
+				.turbulence = turbulence,
+				.phys = phys
+			}
+		);
+
+		auto nuGenerator = make_shared<Generators::Viscosity::WindSpeedGenerator>(
+			viscosity, viscosity, viscosity, ""
+		);
 
 		Solver solver(
 			PhysicalParams{.rho = rho, .f = f},

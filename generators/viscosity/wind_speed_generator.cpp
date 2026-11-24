@@ -40,58 +40,59 @@ vector<double> WindSpeedGenerator::generate(const Data::VolumeState& volume, con
 
 	vector<double> nu(nx * ny * nz, 0);
 
-	for (size_t i = 0; i < nx; i++) {
-		for (size_t j = 0; j < ny; j++) {
-			auto p = j + i * ny;
+	const int np = static_cast<int>(nx * ny);
 
-			auto u10 = u10Data[p];
-			auto v10 = v10Data[p];
+	#pragma omp parallel for schedule(static)
+	for (int p = 0; p < np; p++) {
+		if (h[p] <= 0) continue;
 
-			auto qx = qxData[p];
-			auto qy = qyData[p];
+		auto u10 = u10Data[p];
+		auto v10 = v10Data[p];
 
-			auto ua = uaData[p];
-			auto va = vaData[p];
+		auto qx = qxData[p];
+		auto qy = qyData[p];
 
-			auto windCurrent = Turbulence::WindCurrentParams {
-				.wind = Wind::SpeedVector { 
-					.u10 = u10, 
-					.v10 = v10 
-				},
-				.stress = Wind::StressVector { 
-					.qx = qx, 
-					.qy = qy 
-				},
-				.current = Data::DepthAveragedVelocity { 
-					.ua = ua, 
-					.va = va 
-				}
-			};
+		auto ua = uaData[p];
+		auto va = vaData[p];
 
-			auto fricInf = frictionalInfluence->calculate(windCurrent);
+		auto windCurrent = Turbulence::WindCurrentParams{
+			.wind = Wind::SpeedVector {
+				.u10 = u10,
+				.v10 = v10
+			},
+			.stress = Wind::StressVector {
+				.qx = qx,
+				.qy = qy
+			},
+			.current = Data::DepthAveragedVelocity {
+				.ua = ua,
+				.va = va
+			}
+		};
 
-			auto friction = Turbulence::FrictionParams{
-				.fricInf = fricInf,
-				.windCurrent = windCurrent
-			};
+		auto fricInf = frictionalInfluence->calculate(windCurrent);
 
-			auto visc = tidalSurfaceViscosity->calculate(friction);
+		auto friction = Turbulence::FrictionParams{
+			.fricInf = fricInf,
+			.windCurrent = windCurrent
+		};
 
-			auto viscState = Turbulence::ViscosityParams { 
-				.viscosity = visc,
-				.friction = friction
-			};
+		auto visc = tidalSurfaceViscosity->calculate(friction);
 
-			double z = 0;
+		auto viscState = Turbulence::ViscosityParams{
+			.viscosity = visc,
+			.friction = friction
+		};
 
-			for (size_t k = 0; k < nz; k++) {
-				auto id = k + p * nz;
+		double z = 0;
 
-				nu[id] = viscosity->calculate(z, viscState);
+		for (size_t k = 0; k < nz; k++) {
+			auto id = k + p * nz;
 
-				if (k < nz - 1) {
-					z += h[p] * dz[k];
-				}
+			nu[id] = viscosity->calculate(z, viscState);
+
+			if (k < nz - 1) {
+				z += h[p] * dz[k];
 			}
 		}
 	}

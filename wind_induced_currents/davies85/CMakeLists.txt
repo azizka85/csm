@@ -5,6 +5,12 @@ project(wind_induced_currents_davies_85 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    set(OpenMP_RUNTIME_MSVC "llvm")
+endif()
+
+find_package(OpenMP REQUIRED)
+
 add_executable(wind_induced_currents_davies_85 
     main.cpp
     solver.cpp   
@@ -23,4 +29,5 @@ target_link_libraries(wind_induced_currents_davies_85 PRIVATE
     calc
     generators
     writers
+    OpenMP::OpenMP_CXX
 )

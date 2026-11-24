@@ -5,9 +5,14 @@ project(generators LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    set(OpenMP_RUNTIME_MSVC "llvm")
+endif()
+
 find_package (GeographicLib CONFIG REQUIRED)
 find_package(netCDFCxx CONFIG REQUIRED)
 find_package(boost_math CONFIG REQUIRED)
+find_package(OpenMP REQUIRED)
 
 add_library(generators STATIC
     utils.cpp
@@ -38,4 +43,5 @@ target_link_libraries(generators PRIVATE
     netCDF::netcdf netCDF::netcdf-cxx4
     Boost::math
     ${GeographicLib_LIBRARIES}    
+    OpenMP::OpenMP_CXX
 )
