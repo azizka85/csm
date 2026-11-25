@@ -8,7 +8,7 @@
 #include <generators/wind/ecmwf_generator.h>
 #include <generators/viscosity/wind_speed_generator.h>
 
-#include "double_precision/kernel.h"
+#include "single_precision/kernel.h"
 #include "data.h"
 #include "solver.h"
 
@@ -167,27 +167,27 @@ int main() {
 		data.init();
 
 		vector<string> baseSources = {
-			"opencl/double_precision/utils/max.cl",
-			"opencl/double_precision/utils/interpolate.cl",
-			"opencl/double_precision/slae/direct/tridiagonal.cl",
-			"opencl/double_precision/wind_induced_currents/davies85/solver.cl",
+			"opencl/single_precision/utils/max.cl",
+			"opencl/single_precision/utils/interpolate.cl",
+			"opencl/single_precision/slae/direct/tridiagonal.cl",
+			"opencl/single_precision/wind_induced_currents/davies85/solver.cl",
 		};
 
 		vector<string> defaultViscositySources = {
-			"opencl/double_precision/viscosity/default.cl"
+			"opencl/single_precision/viscosity/default.cl"
 		};
 
 		vector<string> windSpeedViscositySources = {
-			"opencl/double_precision/calc/turbulence.cl",
-			"opencl/double_precision/calc/viscosity/wind_speed.cl",
-			"opencl/double_precision/viscosity/wind_speed.cl"
+			"opencl/single_precision/calc/turbulence.cl",
+			"opencl/single_precision/calc/viscosity/wind_speed.cl",
+			"opencl/single_precision/viscosity/wind_speed.cl"
 		};
 
 		auto sources = baseSources;
 
 		sources.insert(sources.end(), windSpeedViscositySources.begin(), windSpeedViscositySources.end());
 
-		auto kernel = make_shared<Davies85::DoublePrecision::Kernel>(
+		auto kernel = make_shared<Davies85::SinglePrecision::Kernel>(
 			data,
 			sources,
 			interpolateWind

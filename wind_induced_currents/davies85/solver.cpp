@@ -124,7 +124,7 @@ void Solver::setInitialCondition(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int p = 0; p < np; p++) {
 		for (int k = 0; k < nz; k++) {
 			int id = k + p * nz;
@@ -156,7 +156,7 @@ void Solver::calcUA(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int k = 0; k < np; k++) {
 		const int i = k / ny;
 		const int j = k % ny;
@@ -213,7 +213,7 @@ void Solver::calcVA(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int k = 0; k < np; k++) {
 		const int i = k / ny;
 		const int j = k % ny;
@@ -265,7 +265,7 @@ void Solver::createTridiagonalMatrix(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int p = 0; p < np; p++) {
 		if (h[p] > 0) {
 			for (int k = 0; k < nz; k++) {
@@ -314,7 +314,7 @@ void Solver::calcRHSU(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int p = 0; p < np; p++) {
 		if (h[p] > 0) {
 			for (int k = 0; k < nz; k++) {
@@ -369,7 +369,7 @@ void Solver::calcRHSV(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int p = 0; p < np; p++) {
 		if (h[p] > 0) {
 			for (int k = 0; k < nz; k++) {
@@ -421,7 +421,7 @@ void Solver::solveColumn(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int k = 0; k < np; k++) {
 		if (h[k] > 0) {
 			Tridiagonal::Matrix matrix(
@@ -465,7 +465,7 @@ void Solver::calcZ(
 ) {
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int k = 0; k < np; k++) {
 		const int i = k / ny;
 		const int j = k % ny;
@@ -564,7 +564,7 @@ double Solver::maxAbsResidual(
 
 	const int np = nx * ny;
 
-	#pragma omp parallel for schedule(static) reduction(max:maxRes)
+	#pragma omp parallel for schedule(static, 16) reduction(max:maxRes)
 	for (int k = 0; k < np; k++) {
 		if (h[k] > 0) {
 			Tridiagonal::Matrix matrix(

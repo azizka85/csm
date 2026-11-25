@@ -42,7 +42,7 @@ vector<double> WindSpeedGenerator::generate(const Data::VolumeState& volume, con
 
 	const int np = static_cast<int>(nx * ny);
 
-	#pragma omp parallel for schedule(static)
+	#pragma omp parallel for schedule(static, 16)
 	for (int p = 0; p < np; p++) {
 		if (h[p] <= 0) continue;
 
